@@ -1,0 +1,13 @@
+[package]
+name = "url-shortner"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.9"
+diesel = { version = "2.3.11", features = ["postgres", "serde_json", "uuid"] }
+serde = { version = "1.0.229", features = ["derive"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread"] }
+
+[workspace]
+
