@@ -6,8 +6,12 @@ edition = "2024"
 [dependencies]
 axum = "0.8.9"
 diesel = { version = "2.3.11", features = ["postgres", "serde_json", "uuid"] }
+dotenvy = "0.15.7"
 serde = { version = "1.0.229", features = ["derive"] }
 tokio = { version = "1.53.1", features = ["rt-multi-thread"] }
+pq-sys = { version = "0.7.5", features = ["bundled_without_openssl"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+uuid = { version = "1.24.0", features = ["v4"] }
 
 [workspace]
 
