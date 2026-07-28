@@ -8,27 +8,35 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE urls (
-  short_code PRIMARY KEY VARCHAR(7),
+  short_code PRIMARY KEY VARCHAR(4),
   long_url VARCHAR(2048) NOT NULL,
-  created_by UUID , -- foreign key to users 
+  created_by UUID NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_urls FOREIGN KEY (created_by) REFERENCES users(id)
 );
 CREATE TABLE url_analytics(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  short_code VARCHAR(2048) , -- foreign key urls 
+  short_code VARCHAR(4),
   clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  ip_address VARCHAR(45) , 
+  ip_address VARCHAR(45),
   user_agent VARCHAR(1024),
-  browser VARCHAR(),
-  device VARCHAR(),
-  country_code VARCHAR(),
-  referer VARCHAR(),
+  browser VARCHAR(100),
+  device VARCHAR(100),
+  country_code VARCHAR(10),
+  referer VARCHAR(2048),
+  CONSTRAINT fk_url_analytics FOREIGN KEY (short_code) REFERENCES urls(short_code)
 );
+CREATE TYPE transaction_status AS ENUM ('pending', 'sucess', 'failed');
 CREATE TABLE transactions(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
+  user_id UUID NOT NULL,
+  amount INT,
+  currency_code VARCHAR(5),
+  status transaction_status,
+  reference_id UUID,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_transactions FOREIGN KEY (user_id) REFERENCES users(id)
 );
 -- CREATE TABLE subscribtions();
