@@ -1,4 +1,5 @@
-DROP TABLE users;
-DROP TABLE urls;
+DROP TABLE transactions;
 DROP TABLE url_analytics;
-DROP TABLE transaction_status;
+DROP TABLE urls;
+DROP TABLE users;
+DROP TYPE transaction_status;
