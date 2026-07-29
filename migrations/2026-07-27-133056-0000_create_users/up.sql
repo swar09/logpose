@@ -9,7 +9,8 @@ CREATE TABLE users (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 CREATE TABLE urls (
-  short_code VARCHAR(4) PRIMARY KEY ,
+  database_id INT PRIMARY KEY AUTO INCREMENT,
+  short_code VARCHAR(4),
   long_url VARCHAR(2048) NOT NULL,
   created_by UUID NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -40,4 +41,4 @@ CREATE TABLE transactions(
   CONSTRAINT fk_transactions FOREIGN KEY (user_id) REFERENCES users(id)
 );
 -- CREATE TABLE subscribtions();
--- add constraint or the updated at and or the deletion to 
+ 
