@@ -5,10 +5,13 @@ use std::env;
 mod repository;
 mod models;
 mod schema;
+mod utils;
 
 #[tokio::main]
 
 async fn main() {
+    let slice = "Swarnit";
+    
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let conn  = PgConnection::establish(&database_url)
