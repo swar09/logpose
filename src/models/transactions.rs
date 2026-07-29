@@ -4,7 +4,6 @@ use uuid::Uuid;
 use diesel_derive_enum::DbEnum;
 
 #[derive(DbEnum, Debug, Clone, Copy, PartialEq, Eq)]
-// #[ExistingTypePath = "crate::schema::sql_types::TransactionStatus"]
 pub enum TransactionStatus {
     Pending,
     Success,
