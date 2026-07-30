@@ -1,12 +1,14 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use serde::Serialize;
 use uuid::Uuid;
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable,Serialize)]
 #[diesel(table_name = crate::schema::urls)]
 
 pub struct Urls {
-    pub short_code: String,
+    pub database_id : i32,
+    pub short_code: Option<String>,
     pub long_url: String,
     pub created_by: Uuid,
     pub created_at: NaiveDateTime,
@@ -31,3 +33,11 @@ pub struct UpdateCode<'b> {
 pub struct UpdateUrl<'c> {
     pub long_url: &'c str,
 }
+
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::urls)]
+pub struct DatabaseId {
+    pub database_id : i32,
+}
+

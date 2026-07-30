@@ -1,10 +1,11 @@
 use crate::models::users::{NewUser, UpdateUser};
 use crate::models::users::{UpdatePassword, Users};
-use crate::schema::users;
+use crate::schema::users::{self, id};
 use diesel::PgConnection;
 use diesel::RunQueryDsl;
 use diesel::SelectableHelper;
-use diesel::query_dsl::methods::FindDsl;
+use diesel::ExpressionMethods;
+use diesel::QueryDsl;
 use uuid::Uuid;
 
 pub fn create(conn: &mut PgConnection, user: &NewUser) -> Result<Users, diesel::result::Error> {
@@ -40,4 +41,8 @@ pub fn update_password_by_id(
     diesel::update(users::table.find(user_id))
         .set(updated_password)
         .execute(conn)
+}
+
+pub fn get_by_id(user_id : Uuid ,conn: &mut PgConnection) -> Result<Users, diesel::result::Error> {
+    users::table.filter(id.eq(user_id)).select(Users::as_select()).first(conn)
 }

@@ -1,4 +1,4 @@
-// @generated automatically by Diesel CLI.
+﻿// @generated automatically by Diesel CLI.
 
 pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
@@ -44,9 +44,10 @@ diesel::table! {
 }
 
 diesel::table! {
-    urls (short_code) {
+    urls (database_id) {
+        database_id -> Int4,
         #[max_length = 4]
-        short_code -> Varchar,
+        short_code -> Nullable<Varchar>,
         #[max_length = 2048]
         long_url -> Varchar,
         created_by -> Uuid,
@@ -74,7 +75,6 @@ diesel::table! {
 }
 
 diesel::joinable!(transactions -> users (user_id));
-diesel::joinable!(url_analytics -> urls (short_code));
 diesel::joinable!(urls -> users (created_by));
 
 diesel::allow_tables_to_appear_in_same_query!(transactions, url_analytics, urls, users,);
