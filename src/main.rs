@@ -29,7 +29,7 @@ async fn main() {
             "/api/health",
             get(|| async { println!("Server is live !") }),
         )
-        .nest("/users", crate::routes::users::v1_routes_users())
+        .nest("api/v1/users", crate::routes::users::v1_routes_users())
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

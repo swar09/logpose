@@ -18,6 +18,8 @@ hex = "0.4.3"
 base62 = "2.2.4"
 fpe = "0.6.1"
 aes = "0.8.4"
+jsonwebtoken = "11.0.0"
+argon2 = "0.5.3"
 
 [workspace]
 
