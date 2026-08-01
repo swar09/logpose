@@ -17,8 +17,8 @@ pub fn encode(database_id: u32, key : &[u8]) -> String {
         assert!(database_id < RANGE_SIZE, "DATABASE_ID out of RANGE");
     }
     let obfuscated_id = obfuscate(database_id, key);
-    let encrypted = base62::encode(obfuscated_id);
-    encrypted
+    
+    base62::encode(obfuscated_id)
 }
 
 pub fn obfuscate(mut number: u32, key: &[u8]) -> u32 {
@@ -56,8 +56,8 @@ pub fn deobfuscate(mut encrypted_number: u32, key: &[u8]) -> u32 {
 
 pub fn decode(short_code: String, key : &[u8]) -> u32 {
     let encrypted_number = base62::decode(short_code).unwrap() as u32;
-    let database_id = deobfuscate(encrypted_number, key);
-    database_id
+    
+    deobfuscate(encrypted_number, key)
 }
 
 fn integer_to_digits(mut val: u32, length_var: usize) -> Vec<u16> {

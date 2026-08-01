@@ -1,14 +1,13 @@
 use axum::{
-    Error, Json,
+    Json,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
     response::Response,
 };
-use diesel::{PgConnection, r2d2::Pool};
 use uuid::Uuid;
 
-use crate::{AppState, models::urls::Urls};
+use crate::AppState;
 
 pub async fn test() -> Json<String> {
     eprintln!("handler is called ");
@@ -32,6 +31,6 @@ pub async fn get_urls(State(state): State<AppState>, Path(path_id): Path<Uuid>) 
     }
 }
 
-pub async fn get_subscription_by_id(State(state): State<AppState>, Path(path_id): Path<Uuid>) -> Response{
+pub async fn get_subscription_by_id(State(_state): State<AppState>, Path(_path_id): Path<Uuid>) -> Response{
     StatusCode::NOT_IMPLEMENTED.into_response()
 }

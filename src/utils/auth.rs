@@ -35,14 +35,14 @@ pub fn genrate_jwt(role: UserRole, user_id : Uuid) -> Result<String, jsonwebtoke
     let now = chrono::Utc::now().timestamp() as usize;
     let claims = Claims {
         sub : user_id,
-        role: role,
+        role,
         iat: now,
         nbf: now,
         exp: now + DURATION,
     };
     let header = Header::new(jsonwebtoken::Algorithm::HS256);
-    let token = encode(&header, &claims, &key);
-    token
+    
+    encode(&header, &claims, &key)
 }
 pub fn verify_jwt(
     token: String,
