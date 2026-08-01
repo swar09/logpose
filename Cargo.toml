@@ -1,5 +1,5 @@
 [package]
-name = "url-shortner"
+name = "logpose"
 version = "0.1.0"
 edition = "2024"
 
@@ -20,6 +20,7 @@ fpe = "0.6.1"
 aes = "0.8.4"
 jsonwebtoken = "11.0.0"
 argon2 = "0.5.3"
+rand_core = { version = "0.6", features = ["getrandom"] }
 
 [workspace]
 

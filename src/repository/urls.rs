@@ -74,7 +74,10 @@ pub fn get_by_id(id: i32, conn: &mut PgConnection) -> Result<Urls, diesel::resul
         .first(conn)
 }
 
-pub fn get_urls_by_user_id(id: Uuid, conn: &mut PgConnection) -> Result<Vec<Urls>, diesel::result::Error>{
+pub fn get_urls_by_user_id(
+    id: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Urls>, diesel::result::Error> {
     urls::table
         .filter(created_by.eq(id))
         .select(crate::models::urls::Urls::as_select())

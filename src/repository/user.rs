@@ -1,11 +1,11 @@
 use crate::models::users::{NewUser, UpdateUser};
 use crate::models::users::{UpdatePassword, Users};
-use crate::schema::users::{self, id};
+use crate::schema::users::{self, hashed_password, id};
+use diesel::ExpressionMethods;
 use diesel::PgConnection;
+use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use diesel::SelectableHelper;
-use diesel::ExpressionMethods;
-use diesel::QueryDsl;
 use uuid::Uuid;
 
 pub fn create(conn: &mut PgConnection, user: &NewUser) -> Result<Users, diesel::result::Error> {
@@ -36,13 +36,25 @@ pub fn delete_by_id(
 pub fn update_password_by_id(
     conn: &mut PgConnection,
     user_id: Uuid,
-    updated_password: UpdatePassword,
+    updated_hashed_password: UpdatePassword,
 ) -> Result<usize, diesel::result::Error> {
     diesel::update(users::table.find(user_id))
-        .set(updated_password)
+        .set(updated_hashed_password)
         .execute(conn)
 }
 
-pub fn get_by_id(user_id : Uuid ,conn: &mut PgConnection) -> Result<Users, diesel::result::Error> {
-    users::table.filter(id.eq(user_id)).select(Users::as_select()).first(conn)
+pub fn get_by_id(user_id: Uuid, conn: &mut PgConnection) -> Result<Users, diesel::result::Error> {
+    users::table
+        .filter(id.eq(user_id))
+        .select(Users::as_select())
+        .first(conn)
+}
+pub fn get_hashed_password_by_id(
+    user_id: Uuid,
+    conn: &mut PgConnection,
+) -> Result<String, diesel::result::Error> {
+    users::table
+        .filter(id.eq(user_id))
+        .select(hashed_password)
+        .first(conn)
 }

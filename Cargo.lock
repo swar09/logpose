@@ -723,6 +723,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 
 [[package]]
+name = "logpose"
+version = "0.1.0"
+dependencies = [
+ "aes",
+ "argon2",
+ "axum",
+ "base62",
+ "chrono",
+ "diesel",
+ "diesel-derive-enum",
+ "dotenvy",
+ "fpe",
+ "hex",
+ "jsonwebtoken",
+ "md-5",
+ "pq-sys",
+ "rand_core",
+ "serde",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "matchit"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1259,28 +1282,6 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
-
-[[package]]
-name = "url-shortner"
-version = "0.1.0"
-dependencies = [
- "aes",
- "argon2",
- "axum",
- "base62",
- "chrono",
- "diesel",
- "diesel-derive-enum",
- "dotenvy",
- "fpe",
- "hex",
- "jsonwebtoken",
- "md-5",
- "pq-sys",
- "serde",
- "tokio",
- "uuid",
-]
 
 [[package]]
 name = "uuid"

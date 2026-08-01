@@ -28,7 +28,4 @@ pub struct NewEntry {
     pub device: Option<String>,
     pub country_code: Option<String>,
     pub referer: Option<String>,
-} 
-
-
-
+}

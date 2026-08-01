@@ -3,11 +3,11 @@ use diesel::prelude::*;
 use serde::Serialize;
 use uuid::Uuid;
 
-#[derive(Queryable, Selectable,Serialize)]
+#[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = crate::schema::urls)]
 
 pub struct Urls {
-    pub database_id : i32,
+    pub database_id: i32,
     pub short_code: Option<String>,
     pub long_url: String,
     pub created_by: Uuid,
@@ -34,10 +34,8 @@ pub struct UpdateUrl<'c> {
     pub long_url: &'c str,
 }
 
-
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::urls)]
 pub struct DatabaseId {
-    pub database_id : i32,
+    pub database_id: i32,
 }
-

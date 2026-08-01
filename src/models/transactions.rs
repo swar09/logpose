@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use uuid::Uuid;
 use diesel_derive_enum::DbEnum;
+use uuid::Uuid;
 
 #[derive(DbEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransactionStatus {

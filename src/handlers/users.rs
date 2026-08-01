@@ -1,3 +1,4 @@
+use crate::AppState;
 use axum::{
     Json,
     extract::{Path, State},
@@ -5,21 +6,18 @@ use axum::{
     response::IntoResponse,
     response::Response,
 };
+use std::sync::Arc;
 use uuid::Uuid;
-
-use crate::AppState;
 
 pub async fn test() -> Json<String> {
     eprintln!("handler is called ");
 
     Json::from(String::from("Test"))
 }
-use axum::debug_handler;
 
-#[debug_handler(state = crate::AppState)]
-pub async fn get_urls(State(state): State<AppState>, Path(path_id): Path<Uuid>) -> Response {
+pub async fn get_urls(State(state): State<Arc<AppState>>, Path(path_id): Path<Uuid>) -> Response {
     // TODO : Middleware checks
-    let mut conn = state.pool.get().unwrap();
+    let mut conn = state.clone().pool.get().unwrap();
 
     let urls_result = crate::repository::urls::get_urls_by_user_id(path_id, &mut conn);
     match urls_result {
@@ -31,6 +29,9 @@ pub async fn get_urls(State(state): State<AppState>, Path(path_id): Path<Uuid>) 
     }
 }
 
-pub async fn get_subscription_by_id(State(_state): State<AppState>, Path(_path_id): Path<Uuid>) -> Response{
+pub async fn get_subscription_by_id(
+    State(_state): State<Arc<AppState>>,
+    Path(_path_id): Path<Uuid>,
+) -> Response {
     StatusCode::NOT_IMPLEMENTED.into_response()
 }

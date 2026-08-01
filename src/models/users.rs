@@ -7,7 +7,6 @@ use uuid::Uuid;
 #[diesel(table_name = crate::schema::users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 
-
 pub struct Users {
     pub id: Uuid,
     pub first_name: String,
@@ -37,8 +36,6 @@ pub struct RegisterRequest {
     pub email: String,
     pub password: String,
 }
-
-
 
 #[derive(Serialize)]
 pub struct UserResposne {
