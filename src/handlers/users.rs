@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::{AppState, utils::auth::AuthUser};
 use axum::{
     Json,
     extract::{Path, State},
@@ -15,8 +15,14 @@ pub async fn test() -> Json<String> {
     Json::from(String::from("Test"))
 }
 
-pub async fn get_urls(State(state): State<Arc<AppState>>, Path(path_id): Path<Uuid>) -> Response {
-    // TODO : Middleware checks
+pub async fn get_urls(
+    State(state): State<Arc<AppState>>,
+    Path(path_id): Path<Uuid>,
+    auth_user: AuthUser,
+) -> Response {
+    if path_id != auth_user.user_id {
+        return StatusCode::FORBIDDEN.into_response();
+    }
     let mut conn = state.clone().pool.get().unwrap();
 
     let urls_result = crate::repository::urls::get_urls_by_user_id(path_id, &mut conn);

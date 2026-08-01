@@ -30,8 +30,8 @@ pub fn deobfuscate(encrypted_shifted_number: u32, ff: &FF1<Aes256>) -> u32 {
     let digits = integer_to_digits(encrypted_shifted_number - LOWER_BOUND, LENGTH);
     let numeral_string = FlexibleNumeralString::from(digits);
     let pt = ff.decrypt(&[], &numeral_string).unwrap();
-    let decrypted_number = digits_to_integer(pt.into());
-    decrypted_number
+
+    digits_to_integer(pt.into())
 }
 
 pub fn decode(short_code: String, ff: &FF1<Aes256>) -> u32 {

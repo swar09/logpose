@@ -19,6 +19,7 @@ mod utils;
 pub struct AppState {
     pool: Pool<ConnectionManager<PgConnection>>,
     ff: FF1<Aes256>,
+    jwt_secret: String,
 }
 const RADIX: u32 = 3812;
 #[tokio::main]
@@ -30,8 +31,13 @@ async fn main() {
     let addr = env::var("SERVER_URL").expect("SERVER_URL must be set");
     let pool = get_connection_pool();
     let ff = FF1::<Aes256>::new(key, RADIX).unwrap();
-
-    let state = Arc::new(AppState { pool, ff });
+    let jwt_secret = env::var("JWT_ENCODING_KEY").expect("JWT_ENCODING_KEY must be set");
+    // let jwt_secret = jwt_secret_binding.as_bytes();
+    let state = Arc::new(AppState {
+        pool,
+        ff,
+        jwt_secret,
+    });
     let app = Router::new()
         .route(
             "/api/health",

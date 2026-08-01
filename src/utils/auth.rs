@@ -1,7 +1,17 @@
+use crate::AppState;
 use argon2::password_hash::PasswordVerifier;
 use argon2::{Argon2, PasswordHash, PasswordHasher, password_hash::SaltString};
+use axum::RequestPartsExt;
+use axum::extract::FromRequestParts;
+use axum::http::StatusCode;
+use axum::http::request::Parts;
+use axum_extra::{
+    TypedHeader,
+    headers::{Authorization, authorization::Bearer},
+};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
@@ -29,25 +39,26 @@ pub enum UserRole {
 }
 
 #[derive(Serialize)]
-struct LoginResponse {
-    success: bool,
-    data: Option<LoginData>,
+pub struct LoginResponse {
+    pub success: bool,
+    pub data: Option<LoginData>,
 }
 
 #[derive(Serialize)]
-struct LoginData {
-    user: UserRole,
-    token: String,
-    token_type: String,
-    expires_in: usize,
+pub struct LoginData {
+    pub user: UserRole,
+    pub token: String,
+    pub token_type: String,
+    pub expires_in: usize,
 }
 
 const DURATION: usize = 3600;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
-pub fn genrate_jwt(role: UserRole, user_id: Uuid) -> Result<String, jsonwebtoken::errors::Error> {
-    let secret = b"key";
-    let key = EncodingKey::from_secret(secret);
-
+pub fn genrate_jwt(
+    role: UserRole,
+    user_id: Uuid,
+    key: EncodingKey,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let now = chrono::Utc::now().timestamp() as usize;
     let claims = Claims {
         sub: user_id,
@@ -62,11 +73,9 @@ pub fn genrate_jwt(role: UserRole, user_id: Uuid) -> Result<String, jsonwebtoken
 }
 pub fn verify_jwt(
     token: String,
+    key: DecodingKey,
 ) -> Result<jsonwebtoken::TokenData<Claims>, jsonwebtoken::errors::Error> {
-    let secret = b"key";
-    let key = DecodingKey::from_secret(secret);
     let validation = Validation::new(jsonwebtoken::Algorithm::HS256);
-
     let result: Result<jsonwebtoken::TokenData<Claims>, jsonwebtoken::errors::Error> =
         decode(token, &key, &validation);
     result
@@ -84,16 +93,12 @@ pub fn hash_password(password: String) -> Result<String, argon2::password_hash::
             match result {
                 Ok(parsed_hash) => {
                     let string_pasrsed_hash = parsed_hash.to_string();
-                    return Ok(string_pasrsed_hash);
+                    Ok(string_pasrsed_hash)
                 }
-                Err(e) => {
-                    return Err(e);
-                }
+                Err(e) => Err(e),
             }
         }
-        Err(e) => {
-            return Err(e);
-        }
+        Err(e) => Err(e),
     }
 }
 
@@ -102,7 +107,33 @@ pub fn verify_password(password: &str, stored_hash: &str) -> bool {
         Ok(hash) => hash,
         Err(_) => return false,
     };
+
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok()
+}
+
+pub struct AuthUser {
+    pub user_id: Uuid,
+}
+impl FromRequestParts<Arc<AppState>> for AuthUser {
+    type Rejection = StatusCode;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &Arc<AppState>,
+    ) -> Result<Self, Self::Rejection> {
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| StatusCode::UNAUTHORIZED)?;
+        let decoding_key = DecodingKey::from_secret(state.jwt_secret.as_bytes());
+        let claims = verify_jwt(bearer.token().to_string(), decoding_key)
+            .map_err(|_| StatusCode::UNAUTHORIZED)?
+            .claims;
+
+        Ok(AuthUser {
+            user_id: claims.sub,
+        })
+    }
 }
