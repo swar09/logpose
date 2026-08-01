@@ -21,6 +21,7 @@ pub struct AppState {
 async fn main() {
     dotenv().ok();
 
+
     let addr = env::var("SERVER_URL").expect("SERVER_URL must be set");
     let pool = get_connection_pool();
     let state = AppState { pool };

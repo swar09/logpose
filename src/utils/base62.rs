@@ -12,21 +12,19 @@ const LOWER_BOUND: u32 = 238_328;
 const UPPER_BOUND: u32 = 14_776_335;
 const RANGE_SIZE: u32 = UPPER_BOUND - LOWER_BOUND + 1; // 14,538,008
 
-pub fn encode(database_id: u32) -> String {
+pub fn encode(database_id: u32, key : &[u8]) -> String {
     if database_id > RANGE_SIZE {
-        assert!(database_id < RANGE_SIZE , "DATABASE_ID out of RANGE");
+        assert!(database_id < RANGE_SIZE, "DATABASE_ID out of RANGE");
     }
-    let obfuscated_id = obfuscate(database_id);
+    let obfuscated_id = obfuscate(database_id, key);
     let encrypted = base62::encode(obfuscated_id);
     encrypted
 }
 
-pub fn obfuscate(mut number: u32) -> u32 {
-    let key = [0; 32]; // use dotenvy for secure key 
-
+pub fn obfuscate(mut number: u32, key: &[u8]) -> u32 {
+    let ff = FF1::<Aes256>::new(key, RADIX).unwrap();
     loop {
         let digits = integer_to_digits(number, LENGTH);
-        let ff = FF1::<Aes256>::new(&key, RADIX).unwrap();
 
         let numeral_string = FlexibleNumeralString::from(digits);
         let ct = ff.encrypt(&[], &numeral_string).unwrap();
@@ -39,28 +37,26 @@ pub fn obfuscate(mut number: u32) -> u32 {
     }
 }
 
-pub fn deobfuscate(mut encrypted_number: u32) -> u32 {
-    let key = [0; 32]; // use dotenvy for secure key 
+pub fn deobfuscate(mut encrypted_number: u32, key: &[u8]) -> u32 {
+    let ff = FF1::<Aes256>::new(key, RADIX).unwrap();
 
     loop {
         let digits = integer_to_digits(encrypted_number, LENGTH);
-        let ff = FF1::<Aes256>::new(&key, RADIX).unwrap();
-    
+
         let numeral_string = FlexibleNumeralString::from(digits);
         let pt = ff.decrypt(&[], &numeral_string).unwrap();
         let decrypted_number = digits_to_integer(pt.into());
-        
-        
-         if decrypted_number < RANGE_SIZE && decrypted_number > 0 {
+
+        if decrypted_number < RANGE_SIZE && decrypted_number > 0 {
             return decrypted_number;
         }
         encrypted_number = decrypted_number;
     }
 }
 
-pub fn decode(short_code: String) -> u32 {
+pub fn decode(short_code: String, key : &[u8]) -> u32 {
     let encrypted_number = base62::decode(short_code).unwrap() as u32;
-    let database_id = deobfuscate(encrypted_number);
+    let database_id = deobfuscate(encrypted_number, key);
     database_id
 }
 
