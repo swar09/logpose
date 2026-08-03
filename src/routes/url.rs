@@ -7,7 +7,7 @@ use axum::{
 
 use crate::{
     AppState,
-    handlers::urls::{create_url, get_url_data_by_shortcode, redirect_url_by_short_code},
+    handlers::url::{create_url, get_url_data_by_shortcode, redirect_url_by_short_code},
 };
 
 pub fn v1_routes_urls() -> Router<Arc<AppState>> {

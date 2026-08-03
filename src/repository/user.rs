@@ -5,8 +5,8 @@ use diesel::RunQueryDsl;
 use diesel::SelectableHelper;
 use uuid::Uuid;
 
-use crate::models::users::{NewUser, UpdateUser};
-use crate::models::users::{UpdatePassword, Users};
+use crate::models::user::{NewUser, UpdateUser};
+use crate::models::user::{UpdatePassword, Users};
 use crate::schema::users::{self, hashed_password, id};
 
 pub fn create(conn: &mut PgConnection, user: &NewUser) -> Result<Users, diesel::result::Error> {

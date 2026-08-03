@@ -1,4 +1,6 @@
-pub mod transactions;
+pub mod auth;
+pub mod transaction;
+pub mod url;
 pub mod url_analytics;
-pub mod urls;
-pub mod users;
+pub mod user;
+

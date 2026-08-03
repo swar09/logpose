@@ -53,7 +53,7 @@ pub struct NewUserRequest {
 }
 
 #[derive(Serialize)]
-pub struct UserResposne {
+pub struct UserResponse {
     pub email: String,
 
     pub username: String,

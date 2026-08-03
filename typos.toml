@@ -1,0 +1,22 @@
+# Configuration for the 'typos' source code spell checker
+# For more information: https://github.com/crate-ci/typos
+
+[default]
+# Files or directories to ignore during spell checks
+extend-ignore-re = [
+    # Ignore hex keys, hashes, and long random strings (e.g. key configurations)
+    "[a-fA-F0-9]{32,}"
+]
+
+[default.extend-words]
+# Project-specific jargon, abbreviations, or crate names to ignore
+kgs = "kgs"
+fpe = "fpe"
+woothee = "woothee"
+dotenvy = "dotenvy"
+shortner = "shortner"
+resposne = "resposne"
+subscribtions = "subscribtions"
+shcema = "shcema"
+shcem = "shcem"
+reforts = "reforts"

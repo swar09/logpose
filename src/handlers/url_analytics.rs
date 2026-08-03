@@ -11,8 +11,8 @@ use axum::{
 
 use crate::{
     AppState,
-    repository::{url_analytics::get_by_short_code, urls::get_user_id_by_short_code},
-    utils::auth::AuthUser,
+    repository::{url_analytics::get_by_short_code, url::get_user_id_by_short_code},
+    models::auth::AuthUser,
 };
 
 

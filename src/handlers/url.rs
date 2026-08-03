@@ -10,9 +10,12 @@ use base62::decode;
 
 use crate::{
     AppState,
-    models::urls::{NewUrl, NewUrlRequest, UpdateCode},
-    repository::urls::{create, get_by_short_code, get_long_url_by_id, modify_code_by_id},
-    utils::{analytics::create_analytics, auth::AuthUser, base62::encode},
+    models::{
+        url::{NewUrl, NewUrlRequest, UpdateCode},
+        auth::AuthUser,
+    },
+    repository::url::{create, get_by_short_code, get_long_url_by_id, modify_code_by_id},
+    utils::{analytics::create_analytics, base62::encode},
 };
 
 pub async fn create_url(

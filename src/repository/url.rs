@@ -2,7 +2,7 @@ use diesel::ExpressionMethods;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl, SelectableHelper};
 use uuid::Uuid;
 
-use crate::models::urls::{NewUrl, UpdateCode, UpdateUrl, Urls};
+use crate::models::url::{NewUrl, UpdateCode, UpdateUrl, Urls};
 use crate::schema::urls::database_id;
 use crate::schema::urls::short_code;
 use crate::schema::urls::{self, created_by};
@@ -51,7 +51,7 @@ pub fn get_by_short_code(
 ) -> Result<Urls, diesel::result::Error> {
     urls::table
         .filter(short_code.eq(code))
-        .select(crate::models::urls::Urls::as_select())
+        .select(crate::models::url::Urls::as_select())
         .first(conn)
 }
 
@@ -71,7 +71,7 @@ pub fn get_urls_by_user_id(
 ) -> Result<Vec<Urls>, diesel::result::Error> {
     urls::table
         .filter(created_by.eq(id))
-        .select(crate::models::urls::Urls::as_select())
+        .select(crate::models::url::Urls::as_select())
         .load(conn)
 }
 pub fn get_user_id_by_short_code(

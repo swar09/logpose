@@ -4,7 +4,7 @@ use axum::{Router, routing::get};
 
 use crate::{
     AppState,
-    handlers::users::{get_subscription_by_id, get_urls},
+    handlers::user::{get_subscription_by_id, get_urls},
 };
 
 pub fn v1_routes_users() -> Router<Arc<AppState>> {

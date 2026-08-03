@@ -10,9 +10,12 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    models::users::{NewUser, NewUserRequest},
+    models::{
+        user::{NewUser, NewUserRequest},
+        auth::AuthUser,
+    },
     repository::user::create,
-    utils::auth::{AuthUser, hash_password},
+    utils::auth::hash_password,
 };
 
 pub async fn test() -> Json<String> {
@@ -57,7 +60,7 @@ pub async fn get_urls(
     }
     let mut conn = state.clone().pool.get().unwrap();
 
-    let urls_result = crate::repository::urls::get_urls_by_user_id(path_id, &mut conn);
+    let urls_result = crate::repository::url::get_urls_by_user_id(path_id, &mut conn);
     match urls_result {
         Ok(urls) => (StatusCode::OK, Json(urls)).into_response(),
         Err(e) => {
