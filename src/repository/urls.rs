@@ -45,6 +45,16 @@ pub fn get_by_id(id: i32, conn: &mut PgConnection) -> Result<Urls, diesel::resul
         .first(conn)
 }
 
+pub fn get_by_short_code(
+    code: String,
+    conn: &mut PgConnection,
+) -> Result<Urls, diesel::result::Error> {
+    urls::table
+        .filter(short_code.eq(code))
+        .select(crate::models::urls::Urls::as_select())
+        .first(conn)
+}
+
 pub fn get_long_url_by_id(
     id: i32,
     conn: &mut PgConnection,
@@ -64,16 +74,15 @@ pub fn get_urls_by_user_id(
         .select(crate::models::urls::Urls::as_select())
         .load(conn)
 }
-pub fn get_by_short_code(
+pub fn get_user_id_by_short_code(
     code: String,
     conn: &mut PgConnection,
-) -> Result<Urls, diesel::result::Error> {
+) -> Result<Uuid, diesel::result::Error> {
     urls::table
         .filter(short_code.eq(code))
-        .select(crate::models::urls::Urls::as_select())
+        .select(created_by)
         .first(conn)
 }
-
 pub fn get_long_url_by_short_code(
     code: String,
     conn: &mut PgConnection,
@@ -83,5 +92,4 @@ pub fn get_long_url_by_short_code(
         .select(urls::long_url)
         .first(conn)
 }
-
 

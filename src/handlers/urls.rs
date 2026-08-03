@@ -56,6 +56,20 @@ pub async fn create_url(
     }
 }
 
+pub async fn get_url_data_by_shortcode(
+    State(state): State<Arc<AppState>>,
+    Path(short_code): Path<String>,
+) -> Response {
+    let mut conn = state.pool.get().unwrap();
+    let url = match get_by_short_code(short_code, &mut conn) {
+        Ok(url) => url,
+        Err(e) => {
+            eprintln!("{e}");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+    (StatusCode::OK, Json(url)).into_response()
+}
 pub async fn redirect_url_by_short_code(
     State(state): State<Arc<AppState>>,
     Path(short_code): Path<String>,
@@ -88,17 +102,3 @@ pub async fn redirect_url_by_short_code(
     Redirect::temporary(&long_url)
 }
 
-pub async fn get_url_data_by_shortcode(
-    State(state): State<Arc<AppState>>,
-    Path(short_code): Path<String>,
-) -> Response {
-    let mut conn = state.pool.get().unwrap();
-    let url = match get_by_short_code(short_code, &mut conn) {
-        Ok(url) => url,
-        Err(e) => {
-            eprintln!("{e}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
-    (StatusCode::OK, Json(url)).into_response()
-}

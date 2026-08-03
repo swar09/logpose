@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use serde::Serialize;
 use uuid::Uuid;
 
 #[derive(Insertable)]
@@ -20,7 +21,7 @@ pub struct NewEntry {
 
     pub country_code: Option<String>,
 }
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = crate::schema::url_analytics)]
 
 pub struct UrlAnalytics {

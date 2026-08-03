@@ -47,9 +47,7 @@ pub fn create_analytics(
     };
 
     match create(new_entry, conn) {
-        Ok(_) => {
-            true
-        }
+        Ok(_) => true,
         Err(e) => {
             eprintln!("{e}");
             false

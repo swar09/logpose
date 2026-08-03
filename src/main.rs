@@ -5,6 +5,10 @@ mod routes;
 mod schema;
 mod utils;
 
+use std::env;
+use std::net::SocketAddr;
+use std::sync::Arc;
+
 use aes::Aes256;
 use axum::{Router, routing::get};
 use diesel::PgConnection;
@@ -12,9 +16,6 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use dotenvy::dotenv;
 use fpe::ff1::FF1;
-use std::env;
-use std::net::SocketAddr;
-use std::sync::Arc;
 
 use crate::routes::auth::v1_routes_auth;
 use crate::routes::urls::redirect_url_routes;
