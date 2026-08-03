@@ -5,19 +5,27 @@ use uuid::Uuid;
 
 #[derive(DbEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransactionStatus {
-    Pending,
-    Success,
     Failed,
+
+    Pending,
+
+    Success,
 }
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::schema::transactions)]
 pub struct Transactions {
     pub id: Uuid,
-    pub user_id: Uuid,
+
     pub amount: i32,
-    pub currency_code: String,
+
     pub status: TransactionStatus,
-    pub reference_id: Option<Uuid>,
+
+    pub user_id: Uuid,
+
     pub timestamp: NaiveDateTime,
+
+    pub reference_id: Option<Uuid>,
+
+    pub currency_code: String,
 }

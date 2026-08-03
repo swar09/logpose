@@ -4,6 +4,7 @@ use fpe::{
     self,
     ff1::{FF1, FlexibleNumeralString},
 };
+
 const RADIX: u32 = 3812;
 const LENGTH: usize = 2;
 const RL: u32 = RADIX.pow(LENGTH as u32);
@@ -16,6 +17,11 @@ pub fn encode(database_id: u32, ff: &FF1<Aes256>) -> String {
     assert!(database_id < RL, "DATABASE_ID out of RL");
     let obfuscated_shifted_id = obfuscate(database_id, ff);
     base62::encode(obfuscated_shifted_id)
+}
+
+pub fn decode(short_code: String, ff: &FF1<Aes256>) -> u32 {
+    let encrypted_number = base62::decode(short_code).unwrap() as u32;
+    deobfuscate(encrypted_number, ff)
 }
 
 pub fn obfuscate(database_id: u32, ff: &FF1<Aes256>) -> u32 {
@@ -32,11 +38,6 @@ pub fn deobfuscate(encrypted_shifted_number: u32, ff: &FF1<Aes256>) -> u32 {
     let pt = ff.decrypt(&[], &numeral_string).unwrap();
 
     digits_to_integer(pt.into())
-}
-
-pub fn decode(short_code: String, ff: &FF1<Aes256>) -> u32 {
-    let encrypted_number = base62::decode(short_code).unwrap() as u32;
-    deobfuscate(encrypted_number, ff)
 }
 
 fn integer_to_digits(mut val: u32, length_var: usize) -> Vec<u16> {

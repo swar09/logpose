@@ -1,21 +1,33 @@
-use crate::AppState;
-use crate::repository::user::get_hashed_password_by_id;
-use crate::schema::users::{self, email, username};
-use crate::utils::auth::{
-    LoginData, LoginRequest, LoginResponse, UserRole, genrate_jwt, verify_password,
-};
+use std::sync::Arc;
+
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use diesel::query_dsl::methods::{FilterDsl, OrFilterDsl, SelectDsl};
 use diesel::{ExpressionMethods, RunQueryDsl};
-use std::sync::Arc;
 use uuid::Uuid;
 
 use axum::extract::State;
 use jsonwebtoken::EncodingKey;
 
+use crate::AppState;
+use crate::repository::user::get_hashed_password_by_id;
+use crate::schema::users::{self, email, username};
+use crate::utils::auth::{
+    AuthUser, LoginData, LoginRequest, LoginResponse, UserRole, genrate_jwt, verify_password,
+};
+
 const DURATION: usize = 3600;
+fn unauthorized_response() -> Response {
+    (
+        StatusCode::UNAUTHORIZED,
+        Json(LoginResponse {
+            success: false,
+            data: None,
+        }),
+    )
+        .into_response()
+}
 pub async fn login(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<LoginRequest>,
@@ -76,16 +88,9 @@ pub async fn login(
         .into_response()
 }
 
-fn unauthorized_response() -> Response {
-    (
-        StatusCode::UNAUTHORIZED,
-        Json(LoginResponse {
-            success: false,
-            data: None,
-        }),
-    )
-        .into_response()
+// jwt expired , cookie free , redirect to home page
+pub async fn logout(State(_state): State<Arc<AppState>>, _auth_user: AuthUser) -> Response {
+    todo!()
 }
-pub async fn logout() {}
+
 pub async fn refresh() {}
-pub async fn signup() {}
