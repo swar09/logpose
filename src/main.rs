@@ -65,7 +65,7 @@ async fn main() {
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-
+        println!("http-server started at http://{}", std::env::var("SERVER_URL").unwrap());
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
