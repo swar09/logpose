@@ -17,7 +17,9 @@ use crate::{
             UpdateUser,
         },
     },
-    repository::user::{create, get_hashed_password_by_id, update_by_id, update_password_by_id},
+    repository::user::{
+        create, get_by_id, get_hashed_password_by_id, update_by_id, update_password_by_id,
+    },
     utils::auth::hash_password,
 };
 
@@ -67,7 +69,26 @@ pub async fn get_urls(
     }
 }
 
-pub async fn get_user_by_id() {}
+pub async fn get_user_by_id(
+    State(state): State<Arc<AppState>>,
+    Path(path_id): Path<Uuid>,
+    auth_user: AuthUser,
+) -> Response {
+    if path_id != auth_user.user_id {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    let mut conn = state.pool.get().unwrap();
+    let user = match get_by_id(auth_user.user_id, &mut conn) {
+        Ok(user) => user,
+        Err(e) => {
+            eprintln!("{e}");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+
+    return (StatusCode::OK, Json(user)).into_response();
+}
 pub async fn get_subscription_by_id(
     State(_state): State<Arc<AppState>>,
     Path(_path_id): Path<Uuid>,
