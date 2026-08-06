@@ -11,14 +11,10 @@ use axum::extract::State;
 use jsonwebtoken::EncodingKey;
 
 use crate::AppState;
+use crate::models::auth::{AuthUser, LoginData, LoginRequest, LoginResponse, UserRole};
 use crate::repository::user::get_hashed_password_by_id;
 use crate::schema::users::{self, email, username};
-use crate::models::auth::{
-    AuthUser, LoginData, LoginRequest, LoginResponse, UserRole,
-};
-use crate::utils::auth::{
-    genrate_jwt, verify_password,
-};
+use crate::utils::auth::{genrate_jwt, verify_password};
 
 const DURATION: usize = 3600;
 fn unauthorized_response() -> Response {

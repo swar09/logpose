@@ -43,7 +43,8 @@ async fn main() {
     dotenv().ok();
 
     let binding = env::var("ID_AES_KEY").expect("AES KEY NOT PROVIDED");
-    let key_bytes = hex::decode(&binding).expect("ID_AES_KEY must be a valid 64-character hex string");
+    let key_bytes =
+        hex::decode(&binding).expect("ID_AES_KEY must be a valid 64-character hex string");
     let addr = env::var("SERVER_URL").expect("SERVER_URL must be set");
     let pool = get_connection_pool();
     let ff = FF1::<Aes256>::new(&key_bytes, RADIX).unwrap();
@@ -65,7 +66,10 @@ async fn main() {
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-        println!("http-server started at http://{}", std::env::var("SERVER_URL").unwrap());
+    println!(
+        "http-server started at http://{}",
+        std::env::var("SERVER_URL").unwrap()
+    );
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),

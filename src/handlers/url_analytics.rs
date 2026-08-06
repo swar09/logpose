@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-
 use axum::{
     Json,
     extract::{Path, State},
@@ -8,13 +7,11 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-
 use crate::{
     AppState,
-    repository::{url_analytics::get_by_short_code, url::get_user_id_by_short_code},
     models::auth::AuthUser,
+    repository::{url::get_user_id_by_short_code, url_analytics::get_by_short_code},
 };
-
 
 pub async fn get_analytics_by_short_code(
     State(state): State<Arc<AppState>>,

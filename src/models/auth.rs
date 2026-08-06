@@ -8,9 +8,9 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
+use jsonwebtoken::DecodingKey;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use jsonwebtoken::DecodingKey;
 
 use crate::AppState;
 
@@ -34,7 +34,7 @@ pub struct Claims {
 
     //    aud : String, // audience (services where token is intended to be used)
     pub role: UserRole, // add by me not mentioned in blog
-                    // jti: Uuid, // token id for jwt blocking purposes
+                        // jti: Uuid, // token id for jwt blocking purposes
 }
 
 pub struct AuthUser {

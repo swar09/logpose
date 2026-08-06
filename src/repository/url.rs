@@ -92,4 +92,3 @@ pub fn get_long_url_by_short_code(
         .select(urls::long_url)
         .first(conn)
 }
-

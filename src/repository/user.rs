@@ -26,10 +26,10 @@ pub fn delete_by_id(
 pub fn update_by_id(
     conn: &mut PgConnection,
     user_id: Uuid,
-    updated_user: &UpdateUser,
+    updated_user_data: &UpdateUser,
 ) -> Result<Users, diesel::result::Error> {
     diesel::update(users::table.find(user_id))
-        .set(updated_user)
+        .set(updated_user_data)
         .returning(Users::as_returning())
         .get_result(conn)
 }

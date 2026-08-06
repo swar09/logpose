@@ -68,4 +68,3 @@ pub fn hash_password(password: String) -> Result<String, argon2::password_hash::
         Err(e) => Err(e),
     }
 }
-
