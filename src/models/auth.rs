@@ -34,7 +34,7 @@ pub struct Claims {
 
     //    aud : String, // audience (services where token is intended to be used)
     pub role: UserRole, // add by me not mentioned in blog
-                        // jti: Uuid, // token id for jwt blocking purposes
+    pub jti: Uuid,      // token id for jwt blocking purposes
 }
 
 pub struct AuthUser {
@@ -56,6 +56,8 @@ impl FromRequestParts<Arc<AppState>> for AuthUser {
         let claims = crate::utils::auth::verify_jwt(bearer.token().to_string(), decoding_key)
             .map_err(|_| StatusCode::UNAUTHORIZED)?
             .claims;
+
+        // redis.check_blacklist(claims.jti) ? UNAUTHORIZED
 
         Ok(AuthUser {
             user_id: claims.sub,

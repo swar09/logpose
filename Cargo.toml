@@ -23,6 +23,9 @@ argon2 = "0.5.3"
 rand_core = { version = "0.6", features = ["getrandom"] }
 axum-extra = { version = "0.12.6", features = ["typed-header"] }
 woothee = { version = "0.13.0", features = ["serde", "serde_derive"] }
+redis = { version = "1.5.0", features = ["tokio-comp"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [workspace]
 

@@ -87,7 +87,7 @@ pub async fn get_user_by_id(
         }
     };
 
-    return (StatusCode::OK, Json(user)).into_response();
+    (StatusCode::OK, Json(user)).into_response()
 }
 pub async fn get_subscription_by_id(
     State(_state): State<Arc<AppState>>,
@@ -115,12 +115,10 @@ pub async fn update_user_info_by_id(
     };
 
     match update_by_id(&mut conn, auth_user.user_id, &updated_user_data) {
-        Ok(user_data) => {
-            return (StatusCode::OK, Json(user_data)).into_response();
-        }
+        Ok(user_data) => (StatusCode::OK, Json(user_data)).into_response(),
         Err(e) => {
             eprintln!("{e}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
 }
@@ -176,5 +174,5 @@ pub async fn update_user_password(
         }
     }
 
-    return StatusCode::UNAUTHORIZED.into_response();
+    StatusCode::UNAUTHORIZED.into_response()
 }

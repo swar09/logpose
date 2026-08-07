@@ -12,7 +12,7 @@ use crate::{
 
 pub fn v1_routes_users() -> Router<Arc<AppState>> {
     let users_router: Router<Arc<AppState>> = Router::new()
-        .route("", post(update_user_info_by_id))
+        .route("/", post(update_user_info_by_id))
         .route("/urls", get(get_urls))
         .route("/subscription", get(get_subscription_by_id));
 

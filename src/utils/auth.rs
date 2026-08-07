@@ -15,12 +15,14 @@ pub fn genrate_jwt(
     key: EncodingKey,
 ) -> Result<String, jsonwebtoken::errors::Error> {
     let now = chrono::Utc::now().timestamp() as usize;
+    let jti = Uuid::new_v4();
     let claims = Claims {
         sub: user_id,
         role,
         iat: now,
         nbf: now,
         exp: now + DURATION,
+        jti,
     };
     let header = Header::new(jsonwebtoken::Algorithm::HS256);
 
