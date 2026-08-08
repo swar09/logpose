@@ -1,3 +1,4 @@
+mod error;
 mod handlers;
 mod models;
 mod repository;
@@ -10,10 +11,10 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use aes::Aes256;
-use axum::{Router, routing::get};
-use diesel::PgConnection;
+use axum::{routing::get, Router};
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
+use diesel::PgConnection;
 use dotenvy::dotenv;
 use fpe::ff1::FF1;
 
@@ -25,7 +26,7 @@ use crate::utils::redis::RedisStore;
 
 const RADIX: u32 = 3812;
 pub struct AppState {
-    ff: FF1<Aes256>,
+    ff: Arc<FF1<Aes256>>,
 
     pool: Pool<ConnectionManager<PgConnection>>,
 
@@ -70,7 +71,7 @@ async fn main() {
 
     info!("PostgreSQL connection pool initialized");
 
-    let ff = FF1::<Aes256>::new(&key_bytes, RADIX).expect("Failed to initialize FF1");
+    let ff = Arc::new(FF1::<Aes256>::new(&key_bytes, RADIX).expect("Failed to initialize FF1"));
 
     let jwt_secret = env::var("JWT_ENCODING_KEY").expect("JWT_ENCODING_KEY must be set");
 
@@ -82,7 +83,7 @@ async fn main() {
 
     info!("Redis connection initialized");
 
-    let url_service = UrlService::new(redis_store.clone(), pool.clone()).unwrap();
+    let url_service = UrlService::new(redis_store.clone(), pool.clone(), ff.clone());
 
     let state = Arc::new(AppState {
         pool,

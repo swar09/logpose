@@ -1,9 +1,6 @@
 use aes::Aes256;
 use base62;
-use fpe::{
-    self,
-    ff1::{FF1, FlexibleNumeralString},
-};
+use fpe::ff1::{FlexibleNumeralString, FF1};
 
 const RADIX: u32 = 3812;
 const LENGTH: usize = 2;
@@ -19,8 +16,10 @@ pub fn encode(database_id: u32, ff: &FF1<Aes256>) -> String {
     base62::encode(obfuscated_shifted_id)
 }
 
-pub fn decode(short_code: String, ff: &FF1<Aes256>) -> u32 {
-    let encrypted_number = base62::decode(short_code).unwrap() as u32;
+pub fn decode(short_code: &str, ff: &FF1<Aes256>) -> Result<u32, crate::error::AppError> {
+    let encrypted_number = base62::decode(short_code)
+        .map_err(|_| crate::error::AppError::BadRequest("Invalid short code".to_string()))?
+        as u32;
     deobfuscate(encrypted_number, ff)
 }
 
@@ -32,12 +31,22 @@ pub fn obfuscate(database_id: u32, ff: &FF1<Aes256>) -> u32 {
     encrypted_number + LOWER_BOUND
 }
 
-pub fn deobfuscate(encrypted_shifted_number: u32, ff: &FF1<Aes256>) -> u32 {
+pub fn deobfuscate(
+    encrypted_shifted_number: u32,
+    ff: &FF1<Aes256>,
+) -> Result<u32, crate::error::AppError> {
+    if encrypted_shifted_number < LOWER_BOUND {
+        return Err(crate::error::AppError::BadRequest(
+            "Invalid short code".to_string(),
+        ));
+    }
     let digits = integer_to_digits(encrypted_shifted_number - LOWER_BOUND, LENGTH);
     let numeral_string = FlexibleNumeralString::from(digits);
-    let pt = ff.decrypt(&[], &numeral_string).unwrap();
+    let pt = ff
+        .decrypt(&[], &numeral_string)
+        .map_err(|_| crate::error::AppError::BadRequest("Failed to decrypt short code".to_string()))?;
 
-    digits_to_integer(pt.into())
+    Ok(digits_to_integer(pt.into()))
 }
 
 fn integer_to_digits(mut val: u32, length_var: usize) -> Vec<u16> {
@@ -60,12 +69,44 @@ fn digits_to_integer(digits: Vec<u16>) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn get_test_ff1() -> FF1<Aes256> {
+        let key = b"abcdefghijklmnopqrstuvwxyz123456";
+        FF1::<Aes256>::new(key, RADIX).unwrap()
+    }
+
     #[test]
-    fn obfuscate_inverse() {
-        let dummy_key_string = String::from("abcdefghijklmnopqrstuvwxyz123456");
-        let key = dummy_key_string.as_bytes();
-        let ff = FF1::<Aes256>::new(key, RADIX).unwrap();
-        // assert!(deobfuscate(obfuscate(1234567 as u32, key), key), 1234567);
-        assert_eq!(deobfuscate(obfuscate(12345678, &ff), &ff), 12345678);
+    fn test_obfuscate_inverse() {
+        let ff = get_test_ff1();
+        let test_id = 123456;
+        let obfuscated = obfuscate(test_id, &ff);
+        let deobfuscated = deobfuscate(obfuscated, &ff).unwrap();
+        assert_eq!(deobfuscated, test_id);
+    }
+
+    #[test]
+    fn test_encode_and_decode_roundtrip() {
+        let ff = get_test_ff1();
+        let test_ids = vec![0, 1, 42, 9999, 1400000];
+
+        for &id in &test_ids {
+            let code = encode(id, &ff);
+            let decoded_id = decode(&code, &ff).expect("Failed to decode valid short code");
+            assert_eq!(decoded_id, id);
+        }
+    }
+
+    #[test]
+    fn test_decode_invalid_characters() {
+        let ff = get_test_ff1();
+        let invalid_code = "!!!invalid_base62!!!";
+        assert!(decode(invalid_code, &ff).is_err());
+    }
+
+    #[test]
+    fn test_deobfuscate_below_lower_bound() {
+        let ff = get_test_ff1();
+        let value_below_lower_bound = LOWER_BOUND - 1;
+        assert!(deobfuscate(value_below_lower_bound, &ff).is_err());
     }
 }

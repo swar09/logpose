@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
+    error::AppError,
     models::{
         auth::AuthUser,
         user::{
@@ -21,20 +22,16 @@ use crate::{
         create, delete_by_id, get_by_id, get_hashed_password_by_id, update_by_id,
         update_password_by_id,
     },
-    utils::auth::hash_password,
+    utils::auth::{hash_password, verify_password},
 };
 
 pub async fn signup(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<NewUserRequest>,
-) -> Response {
-    let hashed_password = match hash_password(payload.password) {
-        Ok(h) => h,
-        Err(e) => {
-            eprintln!("{e}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
+) -> Result<Response, AppError> {
+    let hashed_password = hash_password(payload.password)
+        .map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
+
     let new_user = NewUser {
         email: &payload.email,
         first_name: &payload.first_name,
@@ -43,53 +40,41 @@ pub async fn signup(
         hashed_password: &hashed_password,
     };
 
-    let mut conn = state.clone().pool.get().unwrap();
-    match create(&mut conn, &new_user) {
-        Ok(user) => (StatusCode::CREATED, Json(user)).into_response(),
-        Err(_e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    }
+    let mut conn = state.pool.get()?;
+    let user = create(&mut conn, &new_user)?;
+
+    Ok((StatusCode::CREATED, Json(user)).into_response())
 }
 
 pub async fn get_urls(
     State(state): State<Arc<AppState>>,
     Path(path_id): Path<Uuid>,
     auth_user: AuthUser,
-) -> Response {
+) -> Result<Response, AppError> {
     if path_id != auth_user.user_id {
-        return StatusCode::FORBIDDEN.into_response();
+        return Err(AppError::Forbidden("Access denied".into()));
     }
-    let mut conn = state.pool.get().unwrap();
+    let mut conn = state.pool.get()?;
+    let urls = crate::repository::url::get_urls_by_user_id(path_id, &mut conn)?;
 
-    let urls_result = crate::repository::url::get_urls_by_user_id(path_id, &mut conn);
-    match urls_result {
-        Ok(urls) => (StatusCode::OK, Json(urls)).into_response(),
-        Err(e) => {
-            println!("DATABASE ERROR : {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
+    Ok((StatusCode::OK, Json(urls)).into_response())
 }
 
 pub async fn get_user_by_id(
     State(state): State<Arc<AppState>>,
     Path(path_id): Path<Uuid>,
     auth_user: AuthUser,
-) -> Response {
+) -> Result<Response, AppError> {
     if path_id != auth_user.user_id {
-        return StatusCode::UNAUTHORIZED.into_response();
+        return Err(AppError::Forbidden("Access denied".into()));
     }
 
-    let mut conn = state.pool.get().unwrap();
-    let user = match get_by_id(auth_user.user_id, &mut conn) {
-        Ok(user) => user,
-        Err(e) => {
-            eprintln!("{e}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
+    let mut conn = state.pool.get()?;
+    let user = get_by_id(auth_user.user_id, &mut conn)?;
 
-    (StatusCode::OK, Json(user)).into_response()
+    Ok((StatusCode::OK, Json(user)).into_response())
 }
+
 pub async fn get_subscription_by_id(
     State(_state): State<Arc<AppState>>,
     Path(_path_id): Path<Uuid>,
@@ -102,95 +87,61 @@ pub async fn update_user_info_by_id(
     Path(path_id): Path<Uuid>,
     auth_user: AuthUser,
     Json(payload): Json<UpdateRequest>,
-) -> Response {
+) -> Result<Response, AppError> {
     if path_id != auth_user.user_id {
-        return StatusCode::UNAUTHORIZED.into_response();
+        return Err(AppError::Forbidden("Access denied".into()));
     }
 
-    let mut conn = state.pool.get().unwrap();
-
+    let mut conn = state.pool.get()?;
     let updated_user_data = UpdateUser {
         username: &payload.username,
         last_name: &payload.last_name,
         first_name: &payload.first_name,
     };
 
-    match update_by_id(&mut conn, auth_user.user_id, &updated_user_data) {
-        Ok(user_data) => (StatusCode::OK, Json(user_data)).into_response(),
-        Err(e) => {
-            eprintln!("{e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
+    let user_data = update_by_id(&mut conn, auth_user.user_id, &updated_user_data)?;
+    Ok((StatusCode::OK, Json(user_data)).into_response())
 }
+
 pub async fn update_user_password(
     State(state): State<Arc<AppState>>,
     Path(path_id): Path<Uuid>,
     auth_user: AuthUser,
     Json(payload): Json<UpdatePasswordRequest>,
-) -> Response {
+) -> Result<Response, AppError> {
     if path_id != auth_user.user_id {
-        return StatusCode::UNAUTHORIZED.into_response();
+        return Err(AppError::Forbidden("Access denied".into()));
     }
 
-    let mut conn = state.pool.get().unwrap();
+    let mut conn = state.pool.get()?;
+    let old_hashed_password = get_hashed_password_by_id(auth_user.user_id, &mut conn)?;
 
-    let given_hashed_password = match hash_password(payload.old_password) {
-        Ok(hashed_password) => hashed_password,
-        Err(e) => {
-            eprintln!("{e}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
-
-    let old_hashed_password = match get_hashed_password_by_id(auth_user.user_id, &mut conn) {
-        Ok(hashed_password) => hashed_password,
-        Err(e) => {
-            eprintln!("{e}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
-
-    if old_hashed_password == given_hashed_password {
-        let new_hashed_password = match hash_password(payload.new_password) {
-            Ok(hashed_password) => hashed_password,
-            Err(_e) => {
-                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-            }
-        };
-
-        let updated_password = UpdatePassword {
-            hashed_password: &new_hashed_password,
-        };
-        let result = update_password_by_id(&mut conn, auth_user.user_id, updated_password);
-
-        match result {
-            Ok(_i) => {
-                return StatusCode::OK.into_response();
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-            }
-        }
+    if !verify_password(&payload.old_password, &old_hashed_password) {
+        return Err(AppError::Unauthorized);
     }
 
-    StatusCode::UNAUTHORIZED.into_response()
+    let new_hashed_password = hash_password(payload.new_password)
+        .map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
+
+    let updated_password = UpdatePassword {
+        hashed_password: &new_hashed_password,
+    };
+    update_password_by_id(&mut conn, auth_user.user_id, updated_password)?;
+
+    Ok(StatusCode::OK.into_response())
 }
 
 pub async fn delete_user_by_id(
     State(state): State<Arc<AppState>>,
     Path(path_id): Path<Uuid>,
     auth_user: AuthUser,
-) -> Response {
+) -> Result<Response, AppError> {
     if path_id != auth_user.user_id {
-        return StatusCode::UNAUTHORIZED.into_response();
+        return Err(AppError::Forbidden("Access denied".into()));
     }
 
-    let mut conn = state.pool.get().unwrap();
+    let mut conn = state.pool.get()?;
+    delete_by_id(&mut conn, auth_user.user_id)?;
 
-    match delete_by_id(&mut conn, auth_user.user_id) {
-        Ok(_) => StatusCode::OK.into_response(),
-        Err(_e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    }
+    Ok(StatusCode::OK.into_response())
 }
