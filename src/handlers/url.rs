@@ -7,16 +7,16 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 
+use crate::repository::url::{delete_by_short_code, get_long_url_by_id, modify_url_by_id};
 use crate::{
     AppState,
     models::{
         auth::AuthUser,
-        url::{NewUrl, NewUrlRequest, UpdateCode},
+        url::{NewUrl, NewUrlRequest, UpdateCode, UpdateUrl, UpdateUrlRequest},
     },
     repository::url::{create, get_by_short_code, modify_code_by_id},
     utils::base62::encode,
 };
-
 pub async fn create_url(
     State(state): State<Arc<AppState>>,
     auth_user: AuthUser,
@@ -86,4 +86,43 @@ pub async fn redirect_url_by_short_code(
         }
     };
     Redirect::temporary(&long_url)
+}
+
+pub async fn update_url(
+    State(state): State<Arc<AppState>>,
+    Path(_short_code): Path<String>,
+    _auth_user: AuthUser,
+    Json(payload): Json<UpdateUrlRequest>,
+) -> Response {
+    let mut conn = state.pool.get().unwrap();
+
+    let update_url = UpdateUrl {
+        long_url: &payload.long_url,
+    };
+    let result = modify_url_by_id(payload.database_id, update_url, &mut conn);
+    match result {
+        Ok(_) => {
+            let _updated_url = match get_long_url_by_id(payload.database_id, &mut conn) {
+                Ok(long_url) => {
+                    return (StatusCode::OK, Json(long_url)).into_response();
+                }
+                Err(_) => {
+                    return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+                }
+            };
+        }
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+pub async fn delete_url(
+    State(state): State<Arc<AppState>>,
+    Path(short_code): Path<String>,
+    _auth_user: AuthUser,
+) -> Response {
+    let mut conn = state.pool.get().unwrap();
+    match delete_by_short_code(short_code, &mut conn) {
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
 }

@@ -87,7 +87,6 @@ pub async fn login(
         .into_response()
 }
 
-// jwt expired , cookie free , redirect to home page
 pub async fn logout(State(state): State<Arc<AppState>>, auth_user: AuthUser) -> Response {
     let exp_rsec = auth_user.exp - chrono::Utc::now().timestamp() as u64;
 

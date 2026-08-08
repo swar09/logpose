@@ -14,8 +14,11 @@ pub fn create(new_url: NewUrl, conn: &mut PgConnection) -> Result<Urls, diesel::
         .get_result(conn)
 }
 
-pub fn delete_by_id(id: i32, conn: &mut PgConnection) -> Result<usize, diesel::result::Error> {
-    diesel::delete(urls::table.find(id)).execute(conn)
+pub fn delete_by_short_code(
+    code: String,
+    conn: &mut PgConnection,
+) -> Result<usize, diesel::result::Error> {
+    diesel::delete(urls::table.filter(short_code.eq(code))).execute(conn)
 }
 
 pub fn modify_url_by_id(

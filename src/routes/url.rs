@@ -7,14 +7,17 @@ use axum::{
 
 use crate::{
     AppState,
-    handlers::url::{create_url, get_url_data_by_shortcode, redirect_url_by_short_code},
+    handlers::url::{
+        create_url, get_url_data_by_shortcode, redirect_url_by_short_code, update_url,
+    },
 };
 
 pub fn v1_routes_urls() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", post(create_url))
         .route("/{:short_code}", get(get_url_data_by_shortcode))
-    // .route("", post(create_url))
+        .route("/{:short_code}", post(update_url))
+        .route("/{:short_code}", post(update_url))
     // .route("", post(create_url))
 }
 pub fn redirect_url_routes() -> Router<Arc<AppState>> {
