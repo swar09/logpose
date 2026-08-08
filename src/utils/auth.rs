@@ -1,9 +1,9 @@
 use argon2::password_hash::PasswordVerifier;
-use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher};
+use argon2::{Argon2, PasswordHash, PasswordHasher, password_hash::SaltString};
 use rand_core::OsRng;
 use uuid::Uuid;
 
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 
 use crate::models::auth::{Claims, UserRole};
 
@@ -79,8 +79,8 @@ mod tests {
         let decoding_key = DecodingKey::from_secret(secret.as_bytes());
 
         let user_id = Uuid::new_v4();
-        let token = genrate_jwt(UserRole::Client, user_id, encoding_key)
-            .expect("Failed to generate JWT");
+        let token =
+            genrate_jwt(UserRole::Client, user_id, encoding_key).expect("Failed to generate JWT");
 
         let token_data = verify_jwt(token, decoding_key).expect("Failed to verify JWT");
         assert_eq!(token_data.claims.sub, user_id);

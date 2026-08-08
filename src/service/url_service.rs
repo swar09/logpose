@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use aes::Aes256;
 use diesel::r2d2::Pool;
-use diesel::{r2d2::ConnectionManager, PgConnection};
+use diesel::{PgConnection, r2d2::ConnectionManager};
 use fpe::ff1::FF1;
 
 use crate::{

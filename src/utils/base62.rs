@@ -1,6 +1,6 @@
 use aes::Aes256;
 use base62;
-use fpe::ff1::{FlexibleNumeralString, FF1};
+use fpe::ff1::{FF1, FlexibleNumeralString};
 
 const RADIX: u32 = 3812;
 const LENGTH: usize = 2;
@@ -42,9 +42,9 @@ pub fn deobfuscate(
     }
     let digits = integer_to_digits(encrypted_shifted_number - LOWER_BOUND, LENGTH);
     let numeral_string = FlexibleNumeralString::from(digits);
-    let pt = ff
-        .decrypt(&[], &numeral_string)
-        .map_err(|_| crate::error::AppError::BadRequest("Failed to decrypt short code".to_string()))?;
+    let pt = ff.decrypt(&[], &numeral_string).map_err(|_| {
+        crate::error::AppError::BadRequest("Failed to decrypt short code".to_string())
+    })?;
 
     Ok(digits_to_integer(pt.into()))
 }

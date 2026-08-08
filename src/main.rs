@@ -11,10 +11,10 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use aes::Aes256;
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
+use diesel::PgConnection;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
-use diesel::PgConnection;
 use dotenvy::dotenv;
 use fpe::ff1::FF1;
 

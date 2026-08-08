@@ -1,7 +1,7 @@
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Serialize;
 use std::fmt;
@@ -85,10 +85,7 @@ impl IntoResponse for AppError {
             }
             AppError::Redis(e) => {
                 tracing::error!("Redis error: {e}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Cache error".to_string(),
-                )
+                (StatusCode::INTERNAL_SERVER_ERROR, "Cache error".to_string())
             }
             AppError::Jwt(e) => {
                 tracing::error!("JWT error: {e}");
@@ -98,10 +95,7 @@ impl IntoResponse for AppError {
                 )
             }
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
-            AppError::Unauthorized => (
-                StatusCode::UNAUTHORIZED,
-                "Unauthorized access".to_string(),
-            ),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized access".to_string()),
             AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
             AppError::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
