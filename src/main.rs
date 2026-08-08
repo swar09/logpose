@@ -3,8 +3,8 @@ mod models;
 mod repository;
 mod routes;
 mod schema;
+mod service;
 mod utils;
-
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -20,6 +20,7 @@ use fpe::ff1::FF1;
 use crate::routes::auth::v1_routes_auth;
 use crate::routes::url::redirect_url_routes;
 use crate::routes::url::v1_routes_urls;
+use crate::service::url_service::UrlService;
 use crate::utils::redis::RedisStore;
 
 const RADIX: u32 = 3812;
@@ -31,6 +32,8 @@ pub struct AppState {
     jwt_secret: String,
 
     redis_store: RedisStore,
+
+    url_service: UrlService,
 }
 pub fn get_connection_pool() -> Pool<ConnectionManager<PgConnection>> {
     let url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -79,11 +82,14 @@ async fn main() {
 
     info!("Redis connection initialized");
 
+    let url_service = UrlService::new(redis_store.clone(), pool.clone()).unwrap();
+
     let state = Arc::new(AppState {
         pool,
         ff,
         jwt_secret,
         redis_store,
+        url_service,
     });
 
     let app = Router::new()

@@ -5,6 +5,7 @@ use redis::{
 use std::time::Duration;
 use uuid::Uuid;
 
+#[derive(Clone)]
 pub struct RedisStore {
     conn: MultiplexedConnection,
 }
@@ -22,47 +23,47 @@ impl RedisStore {
         Ok(RedisStore { conn })
     }
 
-    pub async fn blacklist(&mut self, jti: Uuid, exp_rsec: u64) -> Result<bool, RedisError> {
+    pub async fn blacklist(&self, jti: Uuid, exp_rsec: u64) -> Result<bool, RedisError> {
+        let mut conn = self.conn.clone();
         let options = SetOptions::default().with_expiration(redis::SetExpiry::EX(exp_rsec));
         let key = format!("blacklist:{jti}");
         let value = format!("{jti}");
-        let result: Option<String> = self.conn.set_options(key, value, options).await?;
+        let result: Option<String> = conn.set_options(key, value, options).await?;
 
         Ok(result.as_deref() == Some("OK"))
     }
 
-    pub async fn is_blacklist(&mut self, jti: Uuid) -> Result<bool, RedisError> {
+    pub async fn is_blacklist(&self, jti: Uuid) -> Result<bool, RedisError> {
+        let mut conn = self.conn.clone();
+
         let key = format!("blacklist:{jti}");
-        let result: bool = self.conn.exists(key).await?;
+        let result: bool = conn.exists(key).await?;
 
         Ok(result)
     }
 
     pub async fn set_url(
-        &mut self,
+        &self,
         exp: u64,
         long_url: String,
         short_code: String,
     ) -> Result<bool, RedisError> {
+        let mut conn = self.conn.clone();
+
         let options = SetOptions::default().with_expiration(redis::SetExpiry::EX(exp));
         let key = format!("url:{short_code}");
-        let value = format!("{long_url}");
-        let result: Option<String> = self.conn.set_options(key, value, options).await?;
+        let value = long_url.to_string();
+        let result: Option<String> = conn.set_options(key, value, options).await?;
 
         Ok(result.as_deref() == Some("OK"))
     }
 
-    pub async fn get_url(&mut self, short_code: String) -> Result<Option<String>, RedisError> {
+    pub async fn get_url(&self, short_code: String) -> Result<Option<String>, RedisError> {
+        let mut conn = self.conn.clone();
+
         let key = format!("url:{short_code}");
-        let result: Option<String> = self.conn.get(key).await?;
+        let result: Option<String> = conn.get(key).await?;
 
         Ok(result)
     }
-
-    // TODO(really needed now ?)
-    // pub async fn url_click(&mut self, short_code: String) -> Result<bool, RedisError> {
-    //     let key = format!("url:click:{short_code}:");
-    //     let total_clicks: isize = self.conn.incr(key, 1).await?;
-    //     Ok(true)
-    // }
 }

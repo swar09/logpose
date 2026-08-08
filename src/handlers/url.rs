@@ -6,7 +6,6 @@ use axum::{
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Redirect, Response},
 };
-use base62::decode;
 
 use crate::{
     AppState,
@@ -14,8 +13,8 @@ use crate::{
         auth::AuthUser,
         url::{NewUrl, NewUrlRequest, UpdateCode},
     },
-    repository::url::{create, get_by_short_code, get_long_url_by_id, modify_code_by_id},
-    utils::{analytics::create_analytics, base62::encode},
+    repository::url::{create, get_by_short_code, modify_code_by_id},
+    utils::base62::encode,
 };
 
 pub async fn create_url(
@@ -76,31 +75,15 @@ pub async fn get_url_data_by_shortcode(
 pub async fn redirect_url_by_short_code(
     State(state): State<Arc<AppState>>,
     Path(short_code): Path<String>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    headers: HeaderMap,
+    ConnectInfo(_addr): ConnectInfo<SocketAddr>,
+    _headers: HeaderMap,
 ) -> Redirect {
-    let mut conn = state.pool.get().unwrap();
-    let id = match decode(&short_code) {
-        Ok(id) => id,
+    let long_url = match state.url_service.get_url(short_code).await {
+        Ok(url) => url,
         Err(e) => {
             eprintln!("{e}");
-            return Redirect::to("/");
+            return Redirect::temporary("/404");
         }
     };
-    let long_url = match get_long_url_by_id(id as i32, &mut conn) {
-        Ok(long_url) => long_url,
-        Err(e) => {
-            eprintln!("{e}");
-            return Redirect::to("/");
-        }
-    };
-
-    // fire and forget , user will be redirected without any delay of analytics
-    tokio::spawn(async move {
-        if !create_analytics(addr, &headers, &mut conn, short_code) {
-            eprintln!("Analytics Error")
-        }
-    });
-
     Redirect::temporary(&long_url)
 }
