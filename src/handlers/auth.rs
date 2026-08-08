@@ -88,8 +88,20 @@ pub async fn login(
 }
 
 // jwt expired , cookie free , redirect to home page
-pub async fn logout(State(_state): State<Arc<AppState>>, _auth_user: AuthUser) -> Response {
-    todo!()
-}
+pub async fn logout(State(state): State<Arc<AppState>>, auth_user: AuthUser) -> Response {
+    let exp_rsec = auth_user.exp - chrono::Utc::now().timestamp() as u64;
 
-pub async fn refresh() {}
+    let result = state
+        .redis_store
+        .clone()
+        .blacklist(auth_user.jti, exp_rsec)
+        .await;
+
+    match result {
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(e) => {
+            eprintln!("{e}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}

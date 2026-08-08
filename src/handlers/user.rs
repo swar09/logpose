@@ -18,7 +18,8 @@ use crate::{
         },
     },
     repository::user::{
-        create, get_by_id, get_hashed_password_by_id, update_by_id, update_password_by_id,
+        create, delete_by_id, get_by_id, get_hashed_password_by_id, update_by_id,
+        update_password_by_id,
     },
     utils::auth::hash_password,
 };
@@ -175,4 +176,21 @@ pub async fn update_user_password(
     }
 
     StatusCode::UNAUTHORIZED.into_response()
+}
+
+pub async fn delete_user_by_id(
+    State(state): State<Arc<AppState>>,
+    Path(path_id): Path<Uuid>,
+    auth_user: AuthUser,
+) -> Response {
+    if path_id != auth_user.user_id {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    let mut conn = state.pool.get().unwrap();
+
+    match delete_by_id(&mut conn, auth_user.user_id) {
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(_e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
 }

@@ -7,14 +7,14 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode}
 
 use crate::models::auth::{Claims, UserRole};
 
-const DURATION: usize = 3600;
+const DURATION: u64 = 3600;
 
 pub fn genrate_jwt(
     role: UserRole,
     user_id: Uuid,
     key: EncodingKey,
 ) -> Result<String, jsonwebtoken::errors::Error> {
-    let now = chrono::Utc::now().timestamp() as usize;
+    let now = chrono::Utc::now().timestamp() as u64;
     let jti = Uuid::new_v4();
     let claims = Claims {
         sub: user_id,

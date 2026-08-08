@@ -26,11 +26,11 @@ pub struct Claims {
     //    iss : String, // issuer (multiple services can assign tokens)
     pub sub: Uuid, // subject (issued to)
 
-    pub iat: usize, // time of assignment
+    pub iat: u64, // time of assignment
 
-    pub nbf: usize, // time before token is not valid
+    pub nbf: u64, // time before token is not valid
 
-    pub exp: usize, // time after which token is not valid
+    pub exp: u64, // time after which token is not valid
 
     //    aud : String, // audience (services where token is intended to be used)
     pub role: UserRole, // add by me not mentioned in blog
@@ -39,6 +39,8 @@ pub struct Claims {
 
 pub struct AuthUser {
     pub user_id: Uuid,
+    pub jti: Uuid,
+    pub exp: u64,
 }
 
 impl FromRequestParts<Arc<AppState>> for AuthUser {
@@ -57,10 +59,20 @@ impl FromRequestParts<Arc<AppState>> for AuthUser {
             .map_err(|_| StatusCode::UNAUTHORIZED)?
             .claims;
 
-        // redis.check_blacklist(claims.jti) ? UNAUTHORIZED
+        if state
+            .redis_store
+            .clone()
+            .is_blacklist(claims.jti)
+            .await
+            .map_err(|_| StatusCode::UNAUTHORIZED)?
+        {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
 
         Ok(AuthUser {
             user_id: claims.sub,
+            jti: claims.jti,
+            exp: claims.exp,
         })
     }
 }
