@@ -40,7 +40,7 @@ pub fn create_analytics(
         device: Some(device.to_string()),
         browser: Some(browser.to_string()),
         referer: Some(referer),
-        short_code,
+        short_code: Some(short_code),
         ip_address,
         user_agent: Some(user_agent),
         country_code: Some(country_code),

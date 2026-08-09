@@ -18,7 +18,7 @@ diesel::table! {
         currency_code -> Varchar,
         status -> TransactionStatus,
         reference_id -> Nullable<Uuid>,
-        timestamp -> Timestamp,
+        timestamp -> Timestamptz,
     }
 }
 
@@ -26,8 +26,8 @@ diesel::table! {
     url_analytics (id) {
         id -> Uuid,
         #[max_length = 4]
-        short_code -> Varchar,
-        clicked_at -> Timestamp,
+        short_code -> Nullable<Varchar>,
+        clicked_at -> Timestamptz,
         #[max_length = 45]
         ip_address -> Varchar,
         #[max_length = 1024]
@@ -51,8 +51,8 @@ diesel::table! {
         #[max_length = 2048]
         long_url -> Varchar,
         created_by -> Uuid,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -69,8 +69,8 @@ diesel::table! {
         email -> Varchar,
         #[max_length = 128]
         hashed_password -> Varchar,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 

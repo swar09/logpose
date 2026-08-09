@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel_derive_enum::DbEnum;
 use uuid::Uuid;
@@ -23,7 +23,7 @@ pub struct Transactions {
 
     pub user_id: Uuid,
 
-    pub timestamp: NaiveDateTime,
+    pub timestamp: DateTime<Utc>,
 
     pub reference_id: Option<Uuid>,
 

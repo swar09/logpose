@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::Serialize;
 use uuid::Uuid;
@@ -12,9 +12,9 @@ pub struct NewEntry {
 
     pub referer: Option<String>,
 
-    pub short_code: String,
+    pub short_code: Option<String>,
 
-    // pub clicked_at: NaiveDateTime,
+    // pub clicked_at: DateTime<Utc>,
     pub ip_address: String,
 
     pub user_agent: Option<String>,
@@ -33,9 +33,9 @@ pub struct UrlAnalytics {
 
     pub referer: Option<String>,
 
-    pub short_code: String,
+    pub short_code: Option<String>,
 
-    pub clicked_at: NaiveDateTime,
+    pub clicked_at: DateTime<Utc>,
 
     pub ip_address: String,
 
