@@ -93,6 +93,11 @@ async fn main() {
         url_service,
     });
 
+    let cors = tower_http::cors::CorsLayer::new()
+        .allow_origin(tower_http::cors::Any)
+        .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PATCH, axum::http::Method::DELETE, axum::http::Method::OPTIONS])
+        .allow_headers([axum::http::header::AUTHORIZATION, axum::http::header::CONTENT_TYPE, axum::http::header::ACCEPT]);
+
     let app = Router::new()
         .route(
             "/api/health",
@@ -105,7 +110,8 @@ async fn main() {
         .nest("/api/v1/urls", v1_routes_urls())
         .nest("/api/v1/auth", v1_routes_auth())
         .merge(redirect_url_routes())
-        .with_state(state);
+        .with_state(state)
+        .layer(cors);
 
     let listener = tokio::net::TcpListener::bind(&addr)
         .await

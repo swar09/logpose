@@ -26,6 +26,7 @@ woothee = { version = "0.13.0", features = ["serde", "serde_derive"] }
 redis = { version = "1.5.0", features = ["tokio-comp"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+tower-http = { version = "0.7.0", features = ["cors"] }
 
 [workspace]
 
