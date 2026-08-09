@@ -7,13 +7,20 @@ const LENGTH: usize = 2;
 const RL: u32 = RADIX.pow(LENGTH as u32);
 
 const LOWER_BOUND: u32 = 62_u32.pow(3);
+#[allow(dead_code)]
 const UPPER_BOUND: u32 = 62_u32.pow(4) - 1;
+#[allow(dead_code)]
 const RANGE_SIZE: u32 = UPPER_BOUND - LOWER_BOUND + 1;
 
-pub fn encode(database_id: u32, ff: &FF1<Aes256>) -> String {
-    assert!(database_id < RL, "DATABASE_ID out of RL");
+pub fn encode(database_id: u32, ff: &FF1<Aes256>) -> Result<String, crate::error::AppError> {
+    if database_id >= RL {
+        return Err(crate::error::AppError::Internal(format!(
+            "Database ID {} exceeds maximum limit of {} for 4-character short codes",
+            database_id, RL
+        )));
+    }
     let obfuscated_shifted_id = obfuscate(database_id, ff);
-    base62::encode(obfuscated_shifted_id)
+    Ok(base62::encode(obfuscated_shifted_id))
 }
 
 pub fn decode(short_code: &str, ff: &FF1<Aes256>) -> Result<u32, crate::error::AppError> {
@@ -90,7 +97,7 @@ mod tests {
         let test_ids = vec![0, 1, 42, 9999, 1400000];
 
         for &id in &test_ids {
-            let code = encode(id, &ff);
+            let code = encode(id, &ff).expect("Failed to encode");
             let decoded_id = decode(&code, &ff).expect("Failed to decode valid short code");
             assert_eq!(decoded_id, id);
         }

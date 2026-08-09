@@ -54,6 +54,8 @@ pub struct NewUserRequest {
 
 #[derive(Serialize)]
 pub struct UserResponse {
+    pub id: Uuid,
+
     pub email: String,
 
     pub username: String,
@@ -61,6 +63,24 @@ pub struct UserResponse {
     pub last_name: String,
 
     pub first_name: String,
+
+    pub created_at: DateTime<Utc>,
+
+    pub updated_at: DateTime<Utc>,
+}
+
+impl From<Users> for UserResponse {
+    fn from(user: Users) -> Self {
+        UserResponse {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            last_name: user.last_name,
+            first_name: user.first_name,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+        }
+    }
 }
 
 #[derive(AsChangeset)]
@@ -93,6 +113,7 @@ pub struct UpdatePasswordRequest {
 
     pub new_password: String,
 }
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct RegisterRequest {
     pub email: String,

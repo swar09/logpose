@@ -31,6 +31,11 @@ pub async fn create_url(
             "Cannot create URL for another user".into(),
         ));
     }
+    if payload.long_url.len() > 2048 {
+        return Err(AppError::BadRequest(
+            "URL exceeds maximum length of 2048 characters".into(),
+        ));
+    }
     let mut conn = state.pool.get()?;
     let new_url = NewUrl {
         long_url: &payload.long_url,
@@ -38,7 +43,7 @@ pub async fn create_url(
     };
 
     let mut url = create(new_url, &mut conn)?;
-    let short_code_str = encode(url.database_id as u32, &state.ff);
+    let short_code_str = encode(url.database_id as u32, &state.ff)?;
     let updated_code = UpdateCode {
         short_code: &short_code_str,
     };
@@ -89,9 +94,14 @@ pub async fn update_url(
     auth_user: AuthUser,
     Json(payload): Json<UpdateUrlRequest>,
 ) -> Result<Response, AppError> {
+    if payload.long_url.len() > 2048 {
+        return Err(AppError::BadRequest(
+            "URL exceeds maximum length of 2048 characters".into(),
+        ));
+    }
     let mut conn = state.pool.get()?;
 
-    let existing_url = get_by_short_code(short_code, &mut conn)?;
+    let existing_url = get_by_short_code(short_code.clone(), &mut conn)?;
     if existing_url.created_by != auth_user.user_id {
         return Err(AppError::Forbidden(
             "You are not allowed to update this URL".into(),
@@ -103,6 +113,11 @@ pub async fn update_url(
     };
     modify_url_by_id(payload.database_id, update_url, &mut conn)?;
     let long_url = get_long_url_by_id(payload.database_id, &mut conn)?;
+
+    // Invalidate the cache
+    if let Err(e) = state.redis_store.delete_url(short_code).await {
+        tracing::warn!("Failed to delete cached URL from Redis: {e}");
+    }
 
     Ok((StatusCode::OK, Json(long_url)).into_response())
 }
@@ -121,6 +136,12 @@ pub async fn delete_url(
         ));
     }
 
-    delete_by_short_code(short_code, &mut conn)?;
+    delete_by_short_code(short_code.clone(), &mut conn)?;
+
+    // Invalidate the cache
+    if let Err(e) = state.redis_store.delete_url(short_code).await {
+        tracing::warn!("Failed to delete cached URL from Redis: {e}");
+    }
+
     Ok(StatusCode::OK.into_response())
 }

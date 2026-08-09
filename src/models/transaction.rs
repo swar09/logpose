@@ -12,6 +12,7 @@ pub enum TransactionStatus {
     Success,
 }
 
+#[allow(dead_code)]
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::schema::transactions)]
 pub struct Transactions {

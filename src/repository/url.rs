@@ -41,6 +41,7 @@ pub fn modify_code_by_id(
         .execute(conn)
 }
 
+#[allow(dead_code)]
 pub fn get_by_id(id: i32, conn: &mut PgConnection) -> Result<Urls, diesel::result::Error> {
     urls::table
         .filter(database_id.eq(id))
@@ -86,6 +87,7 @@ pub fn get_user_id_by_short_code(
         .select(created_by)
         .first(conn)
 }
+#[allow(dead_code)]
 pub fn get_long_url_by_short_code(
     code: String,
     conn: &mut PgConnection,

@@ -15,7 +15,7 @@ use crate::{
         auth::AuthUser,
         user::{
             NewUser, NewUserRequest, UpdatePassword, UpdatePasswordRequest, UpdateRequest,
-            UpdateUser,
+            UpdateUser, UserResponse,
         },
     },
     repository::user::{
@@ -42,8 +42,9 @@ pub async fn signup(
 
     let mut conn = state.pool.get()?;
     let user = create(&mut conn, &new_user)?;
+    let user_response = UserResponse::from(user);
 
-    Ok((StatusCode::CREATED, Json(user)).into_response())
+    Ok((StatusCode::CREATED, Json(user_response)).into_response())
 }
 
 pub async fn get_urls(
@@ -71,8 +72,9 @@ pub async fn get_user_by_id(
 
     let mut conn = state.pool.get()?;
     let user = get_by_id(auth_user.user_id, &mut conn)?;
+    let user_response = UserResponse::from(user);
 
-    Ok((StatusCode::OK, Json(user)).into_response())
+    Ok((StatusCode::OK, Json(user_response)).into_response())
 }
 
 pub async fn get_subscription_by_id(
@@ -100,7 +102,8 @@ pub async fn update_user_info_by_id(
     };
 
     let user_data = update_by_id(&mut conn, auth_user.user_id, &updated_user_data)?;
-    Ok((StatusCode::OK, Json(user_data)).into_response())
+    let user_response = UserResponse::from(user_data);
+    Ok((StatusCode::OK, Json(user_response)).into_response())
 }
 
 pub async fn update_user_password(

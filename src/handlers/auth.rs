@@ -82,11 +82,7 @@ pub async fn logout(
     auth_user: AuthUser,
 ) -> Result<Response, AppError> {
     let now = chrono::Utc::now().timestamp() as u64;
-    let exp_rsec = if auth_user.exp > now {
-        auth_user.exp - now
-    } else {
-        0
-    };
+    let exp_rsec = auth_user.exp.saturating_sub(now);
 
     state
         .redis_store

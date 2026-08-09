@@ -30,9 +30,17 @@ impl UrlService {
     }
 
     pub async fn get_url(&self, short_code: String) -> Result<String, AppError> {
-        if let Some(cached_long_url) = self.redis.get_url(short_code.clone()).await? {
+        let cached_long_url = match self.redis.get_url(short_code.clone()).await {
+            Ok(Some(url)) => Some(url),
+            Ok(None) => None,
+            Err(e) => {
+                tracing::warn!("Redis lookup failed, falling back to database: {e}");
+                None
+            }
+        };
+        if let Some(url) = cached_long_url {
             // cache hit
-            return Ok(cached_long_url);
+            return Ok(url);
         }
         let mut pg_conn = self.pg_pool.get()?;
         // cache miss -> Database call

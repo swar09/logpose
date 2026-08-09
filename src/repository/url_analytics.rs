@@ -17,6 +17,7 @@ pub fn create(
         .get_result(conn)
 }
 
+#[allow(dead_code)]
 pub fn delete(uuid: uuid::Uuid, conn: &mut PgConnection) -> Result<usize, diesel::result::Error> {
     diesel::delete(url_analytics.filter(id.eq(uuid))).execute(conn)
 }

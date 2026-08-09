@@ -56,7 +56,9 @@ pub struct DatabaseId {
 #[derive(Deserialize)]
 pub struct UpdateUrlRequest {
     pub long_url: String,
+    #[allow(dead_code)]
     pub short_code: Option<String>,
+    #[allow(dead_code)]
     pub created_by: Uuid,
     pub database_id: i32,
 }

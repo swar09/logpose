@@ -17,6 +17,7 @@ pub enum AppError {
     Pool(diesel::r2d2::PoolError),
     Redis(redis::RedisError),
     Jwt(jsonwebtoken::errors::Error),
+    #[allow(dead_code)]
     NotFound(String),
     Unauthorized,
     Forbidden(String),

@@ -66,4 +66,13 @@ impl RedisStore {
 
         Ok(result)
     }
+
+    pub async fn delete_url(&self, short_code: String) -> Result<bool, RedisError> {
+        let mut conn = self.conn.clone();
+
+        let key = format!("url:{short_code}");
+        let result: u32 = conn.del(key).await?;
+
+        Ok(result > 0)
+    }
 }
