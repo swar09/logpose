@@ -4,7 +4,9 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
-use std::fmt;
+use std::fmt::{self};
+
+use crate::service::rate_limiting::RateLimitError;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
@@ -23,6 +25,7 @@ pub enum AppError {
     Forbidden(String),
     BadRequest(String),
     Internal(String),
+    RateLimitError(RateLimitError),
 }
 
 impl std::error::Error for AppError {}
@@ -39,6 +42,7 @@ impl fmt::Display for AppError {
             AppError::Forbidden(msg) => write!(f, "Forbidden: {msg}"),
             AppError::BadRequest(msg) => write!(f, "Bad request: {msg}"),
             AppError::Internal(msg) => write!(f, "Internal error: {msg}"),
+            AppError::RateLimitError(e) => write!(f, "Rate limit error {0}", e.msg),
         }
     }
 }
@@ -64,6 +68,12 @@ impl From<redis::RedisError> for AppError {
 impl From<jsonwebtoken::errors::Error> for AppError {
     fn from(err: jsonwebtoken::errors::Error) -> Self {
         AppError::Jwt(err)
+    }
+}
+
+impl From<RateLimitError> for AppError {
+    fn from(err: RateLimitError) -> Self {
+        AppError::RateLimitError(err)
     }
 }
 
@@ -100,6 +110,7 @@ impl IntoResponse for AppError {
             AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
             AppError::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+            AppError::RateLimitError(e) => (StatusCode::TOO_MANY_REQUESTS, e.msg),
         };
 
         (status, Json(ErrorResponse { error: message })).into_response()

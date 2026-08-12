@@ -9,6 +9,7 @@ mod utils;
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use aes::Aes256;
 use axum::{Router, routing::get};
@@ -17,6 +18,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use dotenvy::dotenv;
 use fpe::ff1::FF1;
+use tower::limit::RateLimitLayer;
 
 use crate::routes::auth::v1_routes_auth;
 use crate::routes::url::redirect_url_routes;
@@ -95,8 +97,22 @@ async fn main() {
 
     let cors = tower_http::cors::CorsLayer::new()
         .allow_origin(tower_http::cors::Any)
-        .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PATCH, axum::http::Method::DELETE, axum::http::Method::OPTIONS])
-        .allow_headers([axum::http::header::AUTHORIZATION, axum::http::header::CONTENT_TYPE, axum::http::header::ACCEPT]);
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PATCH,
+            axum::http::Method::DELETE,
+            axum::http::Method::OPTIONS,
+        ])
+        .allow_headers([
+            axum::http::header::AUTHORIZATION,
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::ACCEPT,
+        ]);
+
+    let rate_limit_req_per = 10;
+    let per = Duration::from_secs(5);
+    let _rate_limit_layer = RateLimitLayer::new(rate_limit_req_per, per);
 
     let app = Router::new()
         .route(
