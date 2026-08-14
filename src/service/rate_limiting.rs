@@ -34,18 +34,6 @@ impl<S: Clone, A> Clone for RateLimiterService<S, A> {
     }
 }
 
-impl<S, A> RateLimiterService<S, A>
-where
-    S: Clone,
-{
-    fn clone(&self) -> Self {
-        RateLimiterService {
-            inner: self.inner.clone(),
-            algorithm: Arc::clone(&self.algorithm),
-        }
-    }
-}
-
 // i have to pass this in axum layer right !
 // it must be cheaply cloneable
 // thats wehy arc
@@ -233,10 +221,8 @@ pub struct LeakyBucket {}
 pub struct FixedWindowCounter {}
 pub struct SlidingWindowLog {}
 pub struct SlidingWindowCounter {}
-
 mod test {
-
-    use crate::service::rate_limiting::TokenBucket;
+    use super::TokenBucket;
 
     #[tokio::test]
     async fn new_token_bucket_zero_size_rate() {

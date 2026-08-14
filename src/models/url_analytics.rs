@@ -23,7 +23,6 @@ pub struct NewEntry {
 }
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = crate::schema::url_analytics)]
-
 pub struct UrlAnalytics {
     pub id: Uuid,
 

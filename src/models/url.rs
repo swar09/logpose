@@ -5,7 +5,6 @@ use uuid::Uuid;
 
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = crate::schema::urls)]
-
 pub struct Urls {
     pub long_url: String,
 
