@@ -9,7 +9,7 @@ mod utils;
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
+// use std::time::Duration;
 
 use aes::Aes256;
 use axum::{Router, routing::get};
@@ -18,11 +18,14 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use dotenvy::dotenv;
 use fpe::ff1::FF1;
-use tower::limit::RateLimitLayer;
+// use tower::limit::RateLimitLayer;
 
+use crate::handlers::notfound::not_found;
 use crate::routes::auth::v1_routes_auth;
 use crate::routes::url::redirect_url_routes;
 use crate::routes::url::v1_routes_urls;
+use crate::service::rate_limiting::RateLimiterLayer;
+use crate::service::rate_limiting::TokenBucket;
 use crate::service::url_service::UrlService;
 use crate::utils::redis::RedisStore;
 
@@ -110,9 +113,13 @@ async fn main() {
             axum::http::header::ACCEPT,
         ]);
 
-    let rate_limit_req_per = 10;
-    let per = Duration::from_secs(5);
-    let _rate_limit_layer = RateLimitLayer::new(rate_limit_req_per, per);
+    // let rate_limit_req_per = 10;
+    // let per = Duration::from_secs(5);
+    // let _rate_limit_layer = RateLimitLayer::new(rate_limit_req_per, per);
+
+    // Using token bucket
+    let bucket = TokenBucket::new(100, 10).expect("rate limiting must be set properly");
+    let rate_limiting_layer = RateLimiterLayer::new(bucket);
 
     let app = Router::new()
         .route(
@@ -126,8 +133,10 @@ async fn main() {
         .nest("/api/v1/urls", v1_routes_urls())
         .nest("/api/v1/auth", v1_routes_auth())
         .merge(redirect_url_routes())
+        .fallback(not_found)
         .with_state(state)
-        .layer(cors);
+        .layer(cors)
+        .layer(rate_limiting_layer);
 
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
