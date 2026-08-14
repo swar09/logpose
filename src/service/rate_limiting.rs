@@ -75,7 +75,7 @@ pub trait RateLimitAlgorithm: Send + Sync + 'static {
 
 impl RateLimitAlgorithm for TokenBucket {
     async fn try_acquire(&self) -> bool {
-        self.try_aquire_one(1).await
+        self.try_acquire_one(1).await
     }
 }
 
@@ -157,34 +157,34 @@ impl TokenBucket {
         })
     }
 
-    pub async fn aquire_one(&self) -> bool {
+    pub async fn acquire_one(&self) -> bool {
         // worst case infinite loop
         loop {
-            let mut gaurd = self.inner.lock().await;
+            let mut guard = self.inner.lock().await;
 
-            gaurd.refill(self.refill_rate, self.bucket_size);
+            guard.refill(self.refill_rate, self.bucket_size);
 
-            if gaurd.tokens > 0 {
-                gaurd.tokens -= 1;
+            if guard.tokens > 0 {
+                guard.tokens -= 1;
                 return true;
             } else {
                 let wait_time = Duration::from_secs_f64(1.0 / self.refill_rate as f64);
 
-                drop(gaurd);
+                drop(guard);
 
                 sleep(wait_time).await;
             }
         }
     }
 
-    pub async fn try_aquire_one(&self, _n: u64) -> bool {
-        // aquire or false
-        let mut gaurd = self.inner.lock().await;
+    pub async fn try_acquire_one(&self, _n: u64) -> bool {
+        // acquire or false
+        let mut guard = self.inner.lock().await;
 
-        gaurd.refill(self.refill_rate, self.bucket_size);
+        guard.refill(self.refill_rate, self.bucket_size);
 
-        if gaurd.tokens > 0 {
-            gaurd.tokens -= 1;
+        if guard.tokens > 0 {
+            guard.tokens -= 1;
             true
         } else {
             false
@@ -192,13 +192,13 @@ impl TokenBucket {
     }
 
     pub async fn available_tokens(&self) -> u64 {
-        let mut gaurd = self.inner.lock().await;
+        let mut guard = self.inner.lock().await;
 
-        gaurd.refill(self.refill_rate, self.bucket_size);
+        guard.refill(self.refill_rate, self.bucket_size);
 
-        let tokens = gaurd.tokens;
+        let tokens = guard.tokens;
 
-        drop(gaurd);
+        drop(guard);
 
         tokens
     }
@@ -209,9 +209,9 @@ impl TokenBucketState {
         let now = Instant::now();
         let elapsed_duration = now - self.last_update;
 
-        let newly_genrated_tokens = elapsed_duration.as_secs() * refill_rate;
+        let newly_generated_tokens = elapsed_duration.as_secs() * refill_rate;
 
-        self.tokens = min(self.tokens + newly_genrated_tokens, bucket_size);
+        self.tokens = min(self.tokens + newly_generated_tokens, bucket_size);
 
         self.last_update += Duration::from_secs(elapsed_duration.as_secs());
     }

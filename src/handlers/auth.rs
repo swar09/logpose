@@ -14,7 +14,7 @@ use crate::error::AppError;
 use crate::models::auth::{AuthUser, LoginData, LoginRequest, LoginResponse, UserRole};
 use crate::repository::user::get_hashed_password_by_id;
 use crate::schema::users::{self, email, username};
-use crate::utils::auth::{genrate_jwt, verify_password};
+use crate::utils::auth::{generate_jwt, verify_password};
 
 const DURATION: usize = 3600;
 
@@ -54,7 +54,7 @@ pub async fn login(
         return Ok(unauthorized_response());
     }
 
-    let token = genrate_jwt(
+    let token = generate_jwt(
         UserRole::Client,
         user_id,
         EncodingKey::from_secret(state.jwt_secret.as_bytes()),

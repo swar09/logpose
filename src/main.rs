@@ -63,7 +63,7 @@ async fn main() {
         .without_time()
         .init();
 
-    info!("Starting Logpose");
+    println!("   \x1b[32m\x1b[1mInitializing\x1b[0m Logpose services...");
 
     let binding = env::var("ID_AES_KEY").expect("AES KEY NOT PROVIDED");
 
@@ -74,7 +74,7 @@ async fn main() {
 
     let pool = get_connection_pool();
 
-    info!("PostgreSQL connection pool initialized");
+    println!("      \x1b[32m\x1b[1mConnected\x1b[0m to PostgreSQL database");
 
     let ff = Arc::new(FF1::<Aes256>::new(&key_bytes, RADIX).expect("Failed to initialize FF1"));
 
@@ -86,9 +86,11 @@ async fn main() {
         .await
         .expect("Failed to connect to Redis");
 
-    info!("Redis connection initialized");
+    println!("      \x1b[32m\x1b[1mConnected\x1b[0m to Redis cache");
 
     let url_service = UrlService::new(redis_store.clone(), pool.clone(), ff.clone());
+
+    println!("     \x1b[32m\x1b[1mRegistered\x1b[0m URL Shortener services");
 
     let state = Arc::new(AppState {
         pool,
@@ -142,7 +144,7 @@ async fn main() {
         .await
         .expect("Failed to bind server");
 
-    info!(%addr, "HTTP server started");
+    println!("       \x1b[32m\x1b[1mListening\x1b[0m HTTP server on http://{}", addr);
 
     axum::serve(
         listener,

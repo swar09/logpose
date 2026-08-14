@@ -9,7 +9,7 @@ use crate::models::auth::{Claims, UserRole};
 
 const DURATION: u64 = 3600;
 
-pub fn genrate_jwt(
+pub fn generate_jwt(
     role: UserRole,
     user_id: Uuid,
     key: EncodingKey,
@@ -80,7 +80,7 @@ mod tests {
 
         let user_id = Uuid::new_v4();
         let token =
-            genrate_jwt(UserRole::Client, user_id, encoding_key).expect("Failed to generate JWT");
+            generate_jwt(UserRole::Client, user_id, encoding_key).expect("Failed to generate JWT");
 
         let token_data = verify_jwt(token, decoding_key).expect("Failed to verify JWT");
         assert_eq!(token_data.claims.sub, user_id);
@@ -100,7 +100,7 @@ mod tests {
         let decoding_key = DecodingKey::from_secret(invalid_secret.as_bytes());
 
         let user_id = Uuid::new_v4();
-        let token = genrate_jwt(UserRole::Client, user_id, encoding_key).unwrap();
+        let token = generate_jwt(UserRole::Client, user_id, encoding_key).unwrap();
 
         assert!(verify_jwt(token, decoding_key).is_err());
     }
