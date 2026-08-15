@@ -137,8 +137,8 @@ async fn main() {
         .merge(redirect_url_routes())
         .fallback(not_found)
         .with_state(state)
-        .layer(cors)
-        .layer(rate_limiting_layer);
+        .layer(cors);
+        // .layer(rate_limiting_layer);
 
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
