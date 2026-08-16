@@ -2,7 +2,7 @@
 
 > *Log Pose points your users straight to their destination.*
 
-Logpose is a high-performance, scalable URL shortener built with Rust, the Axum framework, Diesel ORM, PostgreSQL, Redis, and Razorpay. This project follows a clean, multi-layered architecture in Rust influenced by Domain-Driven Design (DDD) patterns. Requests enter through the route definitions in `src/routes/` and are forwarded to controllers in the handlers layer under `src/handlers/`. Business and database query logic is decoupled from routes and handled in `src/repository/` using the Diesel ORM, while database structures and request/response payloads live in `src/models/`.
+Logpose is a high-performance, scalable URL shortener built with Rust, the Axum framework, Diesel ORM, PostgreSQL and Redis. This project follows a clean, multi-layered architecture in Rust influenced by Domain-Driven Design (DDD) patterns. Requests enter through the route definitions in `src/routes/` and are forwarded to controllers in the handlers layer under `src/handlers/`. Business and database query logic is decoupled from routes and handled in `src/repository/` using the Diesel ORM, while database structures and request/response payloads live in `src/models/`.
 
 I have implemented Redis caching using the `redis` crate. I am using `redis::aio::ConnectionManager`, which automatically reconnects upon Redis restarts or failures, and gracefully falls back to the database whenever Redis is inactive. The application state is wrapped inside an `Arc<AppState>`, which shares the Redis ConnectionManager, PostgreSQL ConnectionManager (`r2d2`), and other shared state variables across the backend.
 
