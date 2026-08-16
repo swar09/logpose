@@ -32,6 +32,9 @@ qrcode = "0.14.1"
 reqwest = "0.13.4"
 hmac = "0.13.0"
 sha2 = "0.11.0"
+razorpay-rs = "0.1.0-alpha.1"
+thiserror = "2.0.20"
+async-trait = "0.1.92"
 
 [workspace]
 

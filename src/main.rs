@@ -10,7 +10,6 @@ mod utils;
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
-// use std::time::Duration;
 
 use aes::Aes256;
 use axum::{Router, routing::get};
@@ -19,9 +18,9 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use dotenvy::dotenv;
 use fpe::ff1::FF1;
-// use tower::limit::RateLimitLayer;
+use razorpay::RazorpayClient;
 
-use crate::billing::razorpay::get_payments;
+use crate::billing::billing::PaymentsGateway;
 use crate::handlers::notfound::not_found;
 use crate::routes::auth::v1_routes_auth;
 use crate::routes::url::redirect_url_routes;
@@ -42,6 +41,8 @@ pub struct AppState {
     redis_store: RedisStore,
 
     url_service: UrlService,
+
+    billing: Arc<dyn PaymentsGateway>,
 }
 pub fn get_connection_pool() -> Pool<ConnectionManager<PgConnection>> {
     let url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -94,12 +95,22 @@ async fn main() {
 
     println!("     \x1b[32m\x1b[1mRegistered\x1b[0m URL Shortener services");
 
+    // billing
+    let razorpay_key_id = env::var("RAZORPAY_API_KEY").expect("razorpay_api_key not found ");
+    let razorpay_key_secret = env::var("RAZORPAY_API_SECRET").expect("razorpay_secret not found ");
+    let client = RazorpayClient::new(razorpay_key_id, razorpay_key_secret)
+        .expect("Razorpay API_KEY & SECRET must be set properly");
+    let billing = Arc::new(client);
+
+    println!("      \x1b[32m\x1b[1mCreated\x1b[0m Billing Client");
+
     let state = Arc::new(AppState {
         pool,
         ff,
         jwt_secret,
         redis_store,
         url_service,
+        billing,
     });
 
     let cors = tower_http::cors::CorsLayer::new()
@@ -116,10 +127,6 @@ async fn main() {
             axum::http::header::CONTENT_TYPE,
             axum::http::header::ACCEPT,
         ]);
-
-    // let rate_limit_req_per = 10;
-    // let per = Duration::from_secs(5);
-    // let _rate_limit_layer = RateLimitLayer::new(rate_limit_req_per, per);
 
     // Using token bucket
     let bucket = TokenBucket::new(100, 10).expect("rate limiting must be set properly");

@@ -1,6 +1,6 @@
 use redis::{
-    AsyncCommands, AsyncConnectionConfig, Client, RedisError, SetOptions,
-    aio::{ConnectionManager, ConnectionManagerConfig, MultiplexedConnection},
+    AsyncCommands, Client, RedisError, SetOptions,
+    aio::{ConnectionManager, ConnectionManagerConfig},
 };
 use std::time::Duration;
 use uuid::Uuid;
