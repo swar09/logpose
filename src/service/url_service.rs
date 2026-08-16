@@ -1,5 +1,3 @@
-// this file is abstraction over url repository and redis caching okay
-
 use std::sync::Arc;
 
 use aes::Aes256;

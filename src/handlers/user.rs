@@ -146,5 +146,13 @@ pub async fn delete_user_by_id(
     let mut conn = state.pool.get()?;
     delete_by_id(&mut conn, auth_user.user_id)?;
 
+    let now = chrono::Utc::now().timestamp() as u64;
+    let exp_rsec = auth_user.exp.saturating_sub(now);
+
+    state
+        .redis_store
+        .clone()
+        .blacklist(auth_user.jti, exp_rsec)
+        .await?;
     Ok(StatusCode::OK.into_response())
 }

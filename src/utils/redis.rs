@@ -1,30 +1,29 @@
 use redis::{
     AsyncCommands, AsyncConnectionConfig, Client, RedisError, SetOptions,
-    aio::MultiplexedConnection,
+    aio::{ConnectionManager, ConnectionManagerConfig, MultiplexedConnection},
 };
 use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct RedisStore {
-    conn: MultiplexedConnection,
+    conn_mng: ConnectionManager,
 }
 
 impl RedisStore {
     pub async fn new(redis_addr: &str) -> Result<Self, RedisError> {
-        let config = AsyncConnectionConfig::new()
+        let config = ConnectionManagerConfig::new()
             .set_connection_timeout(Some(Duration::from_secs(3)))
             .set_response_timeout(Some(Duration::from_secs(2)));
         let client = Client::open(redis_addr)?;
-        let conn = client
-            .get_multiplexed_async_connection_with_config(&config)
-            .await?;
 
-        Ok(RedisStore { conn })
+        let conn_mng = ConnectionManager::new_with_config(client, config).await?;
+
+        Ok(RedisStore { conn_mng })
     }
 
     pub async fn blacklist(&self, jti: Uuid, exp_rsec: u64) -> Result<bool, RedisError> {
-        let mut conn = self.conn.clone();
+        let mut conn = self.conn_mng.clone();
         let options = SetOptions::default().with_expiration(redis::SetExpiry::EX(exp_rsec));
         let key = format!("blacklist:{jti}");
         let value = format!("{jti}");
@@ -34,7 +33,7 @@ impl RedisStore {
     }
 
     pub async fn is_blacklist(&self, jti: Uuid) -> Result<bool, RedisError> {
-        let mut conn = self.conn.clone();
+        let mut conn = self.conn_mng.clone();
 
         let key = format!("blacklist:{jti}");
         let result: bool = conn.exists(key).await?;
@@ -48,7 +47,7 @@ impl RedisStore {
         long_url: String,
         short_code: String,
     ) -> Result<bool, RedisError> {
-        let mut conn = self.conn.clone();
+        let mut conn = self.conn_mng.clone();
 
         let options = SetOptions::default().with_expiration(redis::SetExpiry::EX(exp));
         let key = format!("url:{short_code}");
@@ -59,7 +58,7 @@ impl RedisStore {
     }
 
     pub async fn get_url(&self, short_code: String) -> Result<Option<String>, RedisError> {
-        let mut conn = self.conn.clone();
+        let mut conn = self.conn_mng.clone();
 
         let key = format!("url:{short_code}");
         let result: Option<String> = conn.get(key).await?;
@@ -68,7 +67,7 @@ impl RedisStore {
     }
 
     pub async fn delete_url(&self, short_code: String) -> Result<bool, RedisError> {
-        let mut conn = self.conn.clone();
+        let mut conn = self.conn_mng.clone();
 
         let key = format!("url:{short_code}");
         let result: u32 = conn.del(key).await?;

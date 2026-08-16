@@ -1,3 +1,4 @@
+mod billing;
 mod error;
 mod handlers;
 mod models;
@@ -20,6 +21,7 @@ use dotenvy::dotenv;
 use fpe::ff1::FF1;
 // use tower::limit::RateLimitLayer;
 
+use crate::billing::razorpay::get_payments;
 use crate::handlers::notfound::not_found;
 use crate::routes::auth::v1_routes_auth;
 use crate::routes::url::redirect_url_routes;
@@ -137,14 +139,17 @@ async fn main() {
         .merge(redirect_url_routes())
         .fallback(not_found)
         .with_state(state)
-        .layer(cors);
-        // .layer(rate_limiting_layer);
+        .layer(cors)
+        .layer(rate_limiting_layer);
 
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .expect("Failed to bind server");
 
-    println!("       \x1b[32m\x1b[1mListening\x1b[0m HTTP server on http://{}", addr);
+    println!(
+        "       \x1b[32m\x1b[1mListening\x1b[0m HTTP server on http://{}",
+        addr
+    );
 
     axum::serve(
         listener,
