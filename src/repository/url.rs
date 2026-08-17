@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
 use diesel::ExpressionMethods;
-use diesel::{PgConnection, QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{BoolExpressionMethods, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper};
 use uuid::Uuid;
 
 use crate::models::url::{NewUrl, UpdateCode, UpdateUrl, Urls};
@@ -65,6 +66,11 @@ pub fn get_long_url_by_id(
 ) -> Result<String, diesel::result::Error> {
     urls::table
         .filter(database_id.eq(id))
+        .filter(
+            urls::expires_at
+                .is_null()
+                .or(urls::expires_at.gt(diesel::dsl::now)),
+        )
         .select(urls::long_url)
         .first(conn)
 }
@@ -78,6 +84,26 @@ pub fn get_urls_by_user_id(
         .select(crate::models::url::Urls::as_select())
         .load(conn)
 }
+
+pub fn count_urls_by_user_id(
+    user_id_val: Uuid,
+    conn: &mut PgConnection,
+) -> Result<i64, diesel::result::Error> {
+    urls::table
+        .filter(created_by.eq(Some(user_id_val)))
+        .count()
+        .get_result(conn)
+}
+
+pub fn check_short_code_exists(
+    code: &str,
+    conn: &mut PgConnection,
+) -> Result<bool, diesel::result::Error> {
+    use diesel::dsl::exists;
+    use diesel::select;
+    select(exists(urls::table.filter(short_code.eq(code)))).get_result(conn)
+}
+
 pub fn get_user_id_by_short_code(
     code: String,
     conn: &mut PgConnection,
@@ -87,13 +113,63 @@ pub fn get_user_id_by_short_code(
         .select(created_by)
         .first(conn)
 }
-#[allow(dead_code)]
+
 pub fn get_long_url_by_short_code(
     code: String,
     conn: &mut PgConnection,
 ) -> Result<String, diesel::result::Error> {
     urls::table
         .filter(short_code.eq(code))
+        .filter(
+            urls::expires_at
+                .is_null()
+                .or(urls::expires_at.gt(diesel::dsl::now)),
+        )
         .select(urls::long_url)
         .first(conn)
+}
+
+pub fn get_active_urls_by_guest_id(
+    guest_id_val: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Urls>, diesel::result::Error> {
+    urls::table
+        .filter(urls::guest_id.eq(guest_id_val))
+        .filter(
+            urls::expires_at
+                .is_null()
+                .or(urls::expires_at.gt(diesel::dsl::now)),
+        )
+        .order(urls::created_at.desc())
+        .select(Urls::as_select())
+        .load(conn)
+}
+
+pub fn claim_guest_urls(
+    guest_id_val: Uuid,
+    user_id_val: Uuid,
+    conn: &mut PgConnection,
+) -> Result<usize, diesel::result::Error> {
+    diesel::update(
+        urls::table.filter(urls::guest_id.eq(guest_id_val)).filter(
+            urls::expires_at
+                .is_null()
+                .or(urls::expires_at.gt(diesel::dsl::now)),
+        ),
+    )
+    .set((
+        urls::created_by.eq(Some(user_id_val)),
+        urls::guest_id.eq(None::<Uuid>),
+        urls::expires_at.eq(None::<DateTime<Utc>>),
+    ))
+    .execute(conn)
+}
+
+pub fn cleanup_expired_guest_urls(conn: &mut PgConnection) -> Result<usize, diesel::result::Error> {
+    diesel::delete(
+        urls::table
+            .filter(urls::guest_id.is_not_null())
+            .filter(urls::expires_at.lt(diesel::dsl::now)),
+    )
+    .execute(conn)
 }
