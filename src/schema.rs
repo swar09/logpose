@@ -117,7 +117,9 @@ diesel::table! {
         short_code -> Nullable<Varchar>,
         #[max_length = 2048]
         long_url -> Varchar,
-        created_by -> Uuid,
+        created_by -> Nullable<Uuid>,
+        guest_id -> Nullable<Uuid>,
+        expires_at -> Nullable<Timestamptz>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

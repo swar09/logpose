@@ -39,7 +39,9 @@ pub async fn create_url(
     let mut conn = state.pool.get()?;
     let new_url = NewUrl {
         long_url: &payload.long_url,
-        created_by: payload.created_by,
+        created_by: Some(payload.created_by),
+        guest_id: None,
+        expires_at: None,
     };
 
     let mut url = create(new_url, &mut conn)?;
@@ -102,7 +104,7 @@ pub async fn update_url(
     let mut conn = state.pool.get()?;
 
     let existing_url = get_by_short_code(short_code.clone(), &mut conn)?;
-    if existing_url.created_by != auth_user.user_id {
+    if existing_url.created_by != Some(auth_user.user_id) {
         return Err(AppError::Forbidden(
             "You are not allowed to update this URL".into(),
         ));
@@ -130,7 +132,7 @@ pub async fn delete_url(
     let mut conn = state.pool.get()?;
 
     let existing_url = get_by_short_code(short_code.clone(), &mut conn)?;
-    if existing_url.created_by != auth_user.user_id {
+    if existing_url.created_by != Some(auth_user.user_id) {
         return Err(AppError::Forbidden(
             "You are not allowed to delete this URL".into(),
         ));

@@ -81,7 +81,7 @@ pub fn get_urls_by_user_id(
 pub fn get_user_id_by_short_code(
     code: String,
     conn: &mut PgConnection,
-) -> Result<Uuid, diesel::result::Error> {
+) -> Result<Option<Uuid>, diesel::result::Error> {
     urls::table
         .filter(short_code.eq(code))
         .select(created_by)

@@ -22,7 +22,7 @@ pub async fn get_analytics_by_short_code(
     let mut conn = state.pool.get()?;
     let user_id = get_user_id_by_short_code(short_code.clone(), &mut conn)?;
 
-    if user_id != auth_user.user_id {
+    if user_id != Some(auth_user.user_id) {
         return Err(AppError::Forbidden("Access denied".into()));
     }
 

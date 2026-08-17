@@ -3,18 +3,16 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Queryable, Selectable, Serialize)]
+#[derive(Queryable, Selectable, Serialize, Debug)]
 #[diesel(table_name = crate::schema::urls)]
 pub struct Urls {
     pub long_url: String,
-
     pub short_code: Option<String>,
-
-    pub created_by: Uuid,
+    pub created_by: Option<Uuid>,
+    pub guest_id: Option<Uuid>,
+    pub expires_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
-
     pub updated_at: DateTime<Utc>,
-
     pub database_id: i32,
 }
 
@@ -22,17 +20,20 @@ pub struct Urls {
 #[diesel(table_name = crate::schema::urls)]
 pub struct NewUrl<'a> {
     pub long_url: &'a str,
-
-    // pub short_code: &'a str,
-    pub created_by: Uuid,
+    pub created_by: Option<Uuid>,
+    pub guest_id: Option<Uuid>,
+    pub expires_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]
 pub struct NewUrlRequest {
     pub long_url: String,
-
-    // pub short_code: String,
     pub created_by: Uuid,
+}
+
+#[derive(Deserialize)]
+pub struct PublicNewUrlRequest {
+    pub long_url: String,
 }
 
 #[derive(AsChangeset)]
@@ -46,6 +47,7 @@ pub struct UpdateUrl<'c> {
 pub struct UpdateCode<'b> {
     pub short_code: &'b str,
 }
+
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::urls)]
 pub struct DatabaseId {
@@ -58,6 +60,6 @@ pub struct UpdateUrlRequest {
     #[allow(dead_code)]
     pub short_code: Option<String>,
     #[allow(dead_code)]
-    pub created_by: Uuid,
+    pub created_by: Option<Uuid>,
     pub database_id: i32,
 }
