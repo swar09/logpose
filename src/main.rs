@@ -19,6 +19,8 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use dotenvy::dotenv;
 use fpe::ff1::FF1;
+use oauth2::basic::BasicClient;
+use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use razorpay::RazorpayClient;
 use tower_http::cors::AllowOrigin;
 use tracing::info;
@@ -50,6 +52,7 @@ pub struct AppState {
     pub webhook_secret: String,
     pub razorpay_key_id: String,
     pub razorpay_key_secret: String,
+    pub google_client: Arc<BasicClient>,
 }
 
 pub fn get_connection_pool() -> Pool<ConnectionManager<PgConnection>> {
@@ -103,6 +106,29 @@ async fn main() {
     let webhook_secret =
         env::var("RAZORPAY_WEBHOOK_SECRET").expect("RAZORPAY_WEBHOOK_SECRET must be set");
 
+    let google_client_id = env::var("GOOGLE_CLIENT_ID").unwrap_or_default();
+    let google_client_secret = env::var("GOOGLE_CLIENT_SECRET").unwrap_or_default();
+    let google_redirect_uri = env::var("GOOGLE_REDIRECT_URI")
+        .unwrap_or_else(|_| "http://localhost:8000/api/v1/auth/google/callback".to_string());
+
+    let auth_url = AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string())
+        .expect("Invalid Google Auth URL");
+    let token_url = TokenUrl::new("https://oauth2.googleapis.com/token".to_string())
+        .expect("Invalid Google Token URL");
+    let redirect_url =
+        RedirectUrl::new(google_redirect_uri).expect("Invalid Google Redirect URL");
+
+    let google_client = Arc::new(
+        BasicClient::new(
+            ClientId::new(google_client_id),
+            Some(ClientSecret::new(google_client_secret)),
+            auth_url,
+            Some(token_url),
+        )
+        .set_redirect_uri(redirect_url),
+    );
+    println!("      \x1b[32m\x1b[1mConfigured\x1b[0m Google OAuth 2.0 Client");
+
     let cleanup_pool = pool.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600));
@@ -110,6 +136,36 @@ async fn main() {
             interval.tick().await;
             if let Ok(mut conn) = cleanup_pool.get() {
                 let _ = crate::repository::url::cleanup_expired_guest_urls(&mut conn);
+            }
+        }
+    });
+
+    let sub_reconcile_pool = pool.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(21600));
+        loop {
+            interval.tick().await;
+            if let Ok(mut conn) = sub_reconcile_pool.get() {
+                use diesel::ExpressionMethods;
+                use diesel::QueryDsl;
+                use diesel::RunQueryDsl;
+                let _ = diesel::update(
+                    crate::schema::user_subscriptions::table
+                        .filter(
+                            crate::schema::user_subscriptions::status
+                                .eq(crate::models::billing::SubscriptionStatus::Active),
+                        )
+                        .filter(crate::schema::user_subscriptions::cancel_at_period_end.eq(true))
+                        .filter(
+                            crate::schema::user_subscriptions::current_period_end
+                                .lt(diesel::dsl::now),
+                        ),
+                )
+                .set(
+                    crate::schema::user_subscriptions::status
+                        .eq(crate::models::billing::SubscriptionStatus::Canceled),
+                )
+                .execute(&mut conn);
             }
         }
     });
@@ -124,6 +180,7 @@ async fn main() {
         webhook_secret,
         razorpay_key_id,
         razorpay_key_secret,
+        google_client,
     });
 
     let cors = tower_http::cors::CorsLayer::new()

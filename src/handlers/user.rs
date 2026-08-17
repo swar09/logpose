@@ -54,6 +54,9 @@ pub async fn signup(
         last_name: &payload.last_name,
         username: &payload.username,
         hashed_password: &hashed_password,
+        avatar_url: None,
+        google_id: None,
+        auth_provider: "local",
     };
 
     let mut conn = state.pool.get()?;

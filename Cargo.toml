@@ -13,7 +13,6 @@ pq-sys = { version = "0.7.5", features = ["bundled_without_openssl"] }
 chrono = { version = "0.4.45", features = ["serde"] }
 uuid = { version = "1.24.0", features = ["serde", "v4"] }
 diesel-derive-enum = { version = "2.1.0", features = ["postgres"] }
-# md-5 = "0.11.0"
 hex = "0.4.3"
 base62 = "2.2.4"
 fpe = "0.6.1"
@@ -35,6 +34,7 @@ razorpay-rs = "0.1.0-alpha.1"
 thiserror = "2.0.20"
 async-trait = "0.1.92"
 serde_json = "1.0.151"
+oauth2 = "4.4"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 [workspace]
-

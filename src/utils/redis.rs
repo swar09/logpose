@@ -74,4 +74,25 @@ impl RedisStore {
 
         Ok(result > 0)
     }
+
+    pub async fn set_oauth_state(&self, state: &str, exp_sec: u64) -> Result<bool, RedisError> {
+        let mut conn = self.conn_mng.clone();
+        let options = SetOptions::default().with_expiration(redis::SetExpiry::EX(exp_sec));
+        let key = format!("oauth_state:{state}");
+        let result: Option<String> = conn.set_options(key, "1".to_string(), options).await?;
+
+        Ok(result.as_deref() == Some("OK"))
+    }
+
+    pub async fn verify_and_consume_oauth_state(&self, state: &str) -> Result<bool, RedisError> {
+        let mut conn = self.conn_mng.clone();
+        let key = format!("oauth_state:{state}");
+        let exists: bool = conn.exists(&key).await?;
+        if exists {
+            let _: u32 = conn.del(&key).await?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
 }

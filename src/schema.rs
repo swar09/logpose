@@ -160,6 +160,12 @@ diesel::table! {
         email -> Varchar,
         #[max_length = 128]
         hashed_password -> Varchar,
+        #[max_length = 2048]
+        avatar_url -> Nullable<Varchar>,
+        #[max_length = 100]
+        google_id -> Nullable<Varchar>,
+        #[max_length = 30]
+        auth_provider -> Varchar,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

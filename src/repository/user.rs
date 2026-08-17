@@ -5,9 +5,8 @@ use diesel::RunQueryDsl;
 use diesel::SelectableHelper;
 use uuid::Uuid;
 
-use crate::models::user::{NewUser, UpdateUser};
-use crate::models::user::{UpdatePassword, Users};
-use crate::schema::users::{self, hashed_password, id};
+use crate::models::user::{NewUser, UpdateOAuthProfile, UpdatePassword, UpdateUser, Users};
+use crate::schema::users::{self, email, google_id, hashed_password, id};
 
 pub fn create(conn: &mut PgConnection, user: &NewUser) -> Result<Users, diesel::result::Error> {
     diesel::insert_into(users::table)
@@ -50,6 +49,38 @@ pub fn get_by_id(user_id: Uuid, conn: &mut PgConnection) -> Result<Users, diesel
         .select(Users::as_select())
         .first(conn)
 }
+
+pub fn get_by_email(
+    user_email: &str,
+    conn: &mut PgConnection,
+) -> Result<Users, diesel::result::Error> {
+    users::table
+        .filter(email.eq(user_email))
+        .select(Users::as_select())
+        .first(conn)
+}
+
+pub fn get_by_google_id(
+    google_id_val: &str,
+    conn: &mut PgConnection,
+) -> Result<Users, diesel::result::Error> {
+    users::table
+        .filter(google_id.eq(Some(google_id_val)))
+        .select(Users::as_select())
+        .first(conn)
+}
+
+pub fn update_oauth_profile(
+    user_id: Uuid,
+    profile: &UpdateOAuthProfile,
+    conn: &mut PgConnection,
+) -> Result<Users, diesel::result::Error> {
+    diesel::update(users::table.find(user_id))
+        .set(profile)
+        .returning(Users::as_returning())
+        .get_result(conn)
+}
+
 pub fn get_hashed_password_by_id(
     user_id: Uuid,
     conn: &mut PgConnection,
