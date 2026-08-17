@@ -222,7 +222,6 @@ pub struct FixedWindowCounter {}
 pub struct SlidingWindowLog {}
 pub struct SlidingWindowCounter {}
 mod test {
-    
 
     #[tokio::test]
     async fn new_token_bucket_zero_size_rate() {

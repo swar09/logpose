@@ -10,6 +10,16 @@ pub async fn razorpay_webhook(
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
+    let _rzp_event_id = match headers
+        .get("x-razorpay-event-id")
+        .and_then(|v| v.to_str().ok())
+    {
+        Some(id) => id,
+        None => {
+            tracing::warn!("webhook request missing x-razorpay-event-id ");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
     let signature = match headers
         .get("X-Razorpay-Signature")
         .and_then(|v| v.to_str().ok())

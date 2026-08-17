@@ -1,6 +1,12 @@
-DROP TABLE transactions;
-DROP TABLE url_analytics;
-DROP TABLE urls;
-DROP TABLE users;
-DROP TYPE transaction_status;
-DROP FUNCTION IF EXISTS update_updated_at_column;
+DROP TABLE IF EXISTS webhook_events CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
+DROP TABLE IF EXISTS user_subscriptions CASCADE;
+DROP TABLE IF EXISTS plans CASCADE;
+DROP TABLE IF EXISTS url_analytics CASCADE;
+DROP TABLE IF EXISTS urls CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TYPE IF EXISTS webhook_processing_status;
+DROP TYPE IF EXISTS payment_status;
+DROP TYPE IF EXISTS subscription_status;
+DROP TYPE IF EXISTS billing_interval;
+DROP FUNCTION IF EXISTS update_updated_at_column CASCADE;
