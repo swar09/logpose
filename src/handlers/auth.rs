@@ -9,9 +9,7 @@ use axum::{
 use diesel::query_dsl::methods::{FilterDsl, OrFilterDsl, SelectDsl};
 use diesel::{ExpressionMethods, RunQueryDsl};
 use jsonwebtoken::EncodingKey;
-use oauth2::{
-    AuthorizationCode, CsrfToken, Scope, TokenResponse,
-};
+use oauth2::{AuthorizationCode, CsrfToken, Scope, TokenResponse};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -103,9 +101,7 @@ pub async fn login(
         .into_response())
 }
 
-pub async fn google_login(
-    State(state): State<Arc<AppState>>,
-) -> Result<Redirect, AppError> {
+pub async fn google_login(State(state): State<Arc<AppState>>) -> Result<Redirect, AppError> {
     let (auth_url, csrf_token) = state
         .google_client
         .authorize_url(CsrfToken::new_random)
@@ -165,9 +161,7 @@ pub async fn google_callback(
         .bearer_auth(access_token)
         .send()
         .await
-        .map_err(|e| {
-            AppError::Internal(format!("Failed to fetch user profile from Google: {e}"))
-        })?
+        .map_err(|e| AppError::Internal(format!("Failed to fetch user profile from Google: {e}")))?
         .json()
         .await
         .map_err(|e| AppError::Internal(format!("Failed to parse Google user profile: {e}")))?;
@@ -216,17 +210,16 @@ pub async fn google_callback(
         }
     };
 
-    if let Some(cookie_header) = headers.get(header::COOKIE) {
-        if let Ok(cookie_str) = cookie_header.to_str() {
-            for cookie_pair in cookie_str.split(';') {
-                let parts: Vec<&str> = cookie_pair.trim().split('=').collect();
-                if parts.len() == 2 && parts[0] == "guest_id" {
-                    if let Ok(guest_uuid) = Uuid::parse_str(parts[1]) {
-                        let _ = crate::repository::url::claim_guest_urls(
-                            guest_uuid, user.id, &mut conn,
-                        );
-                    }
-                }
+    if let Some(cookie_header) = headers.get(header::COOKIE)
+        && let Ok(cookie_str) = cookie_header.to_str()
+    {
+        for cookie_pair in cookie_str.split(';') {
+            let parts: Vec<&str> = cookie_pair.trim().split('=').collect();
+            if parts.len() == 2
+                && parts[0] == "guest_id"
+                && let Ok(guest_uuid) = Uuid::parse_str(parts[1])
+            {
+                let _ = crate::repository::url::claim_guest_urls(guest_uuid, user.id, &mut conn);
             }
         }
     }

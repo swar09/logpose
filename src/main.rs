@@ -115,8 +115,7 @@ async fn main() {
         .expect("Invalid Google Auth URL");
     let token_url = TokenUrl::new("https://oauth2.googleapis.com/token".to_string())
         .expect("Invalid Google Token URL");
-    let redirect_url =
-        RedirectUrl::new(google_redirect_uri).expect("Invalid Google Redirect URL");
+    let redirect_url = RedirectUrl::new(google_redirect_uri).expect("Invalid Google Redirect URL");
 
     let google_client = Arc::new(
         BasicClient::new(
