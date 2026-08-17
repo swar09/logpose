@@ -43,6 +43,8 @@ pub struct AppState {
     url_service: UrlService,
 
     billing: Arc<dyn PaymentsGateway>,
+
+    webhook_secret: String,
 }
 pub fn get_connection_pool() -> Pool<ConnectionManager<PgConnection>> {
     let url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -104,6 +106,9 @@ async fn main() {
 
     println!("      \x1b[32m\x1b[1mCreated\x1b[0m Billing Client");
 
+    let webhook_secret =
+        env::var("RAZORPAY_WEBHOOK_SECRET").expect("RAZORPAY_WEBHOOK_SECRET must be set");
+
     let state = Arc::new(AppState {
         pool,
         ff,
@@ -111,6 +116,7 @@ async fn main() {
         redis_store,
         url_service,
         billing,
+        webhook_secret,
     });
 
     let cors = tower_http::cors::CorsLayer::new()

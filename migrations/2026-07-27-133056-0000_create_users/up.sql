@@ -1,11 +1,7 @@
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = CURRENT_TIMESTAMP;
+RETURN NEW;
 END;
 $$ language 'plpgsql';
-
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   first_name VARCHAR(100) NOT NULL,
@@ -16,15 +12,10 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-
 CREATE UNIQUE INDEX idx_users_lower_email ON users(LOWER(email));
 CREATE UNIQUE INDEX idx_users_lower_username ON users(LOWER(username));
-
-CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON users
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
+CREATE TRIGGER update_users_updated_at BEFORE
+UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TABLE urls (
   database_id SERIAL PRIMARY KEY,
   short_code VARCHAR(4) UNIQUE,
@@ -34,14 +25,9 @@ CREATE TABLE urls (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   CONSTRAINT fk_urls FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
-
 CREATE INDEX idx_urls_created_by ON urls(created_by);
-
-CREATE TRIGGER update_urls_updated_at
-    BEFORE UPDATE ON urls
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
+CREATE TRIGGER update_urls_updated_at BEFORE
+UPDATE ON urls FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TABLE url_analytics(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   short_code VARCHAR(4),
@@ -52,11 +38,10 @@ CREATE TABLE url_analytics(
   device VARCHAR(100),
   country_code VARCHAR(10),
   referer VARCHAR(2048),
-  CONSTRAINT fk_url_analytics FOREIGN KEY (short_code) REFERENCES urls(short_code) ON DELETE SET NULL
+  CONSTRAINT fk_url_analytics FOREIGN KEY (short_code) REFERENCES urls(short_code) ON DELETE
+  SET NULL
 );
-
 CREATE INDEX idx_url_analytics_short_code ON url_analytics(short_code);
-
 CREATE TYPE transaction_status AS ENUM ('pending', 'success', 'failed');
 CREATE TABLE transactions(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -68,5 +53,8 @@ CREATE TABLE transactions(
   timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   CONSTRAINT fk_transactions FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
 CREATE INDEX idx_transactions_user_id ON transactions(user_id);
+-- todo()
+-- subscriptions 
+-- transactions refactor  
+-- public facing db
