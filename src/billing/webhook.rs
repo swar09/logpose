@@ -192,3 +192,140 @@ async fn process_webhook_event(
     );
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hmac::{Hmac, KeyInit, Mac};
+    use sha2::Sha256;
+
+    type HmacSha256 = Hmac<Sha256>;
+
+    fn generate_test_signature(body: &str, secret: &str) -> String {
+        let mut mac =
+            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
+        mac.update(body.as_bytes());
+        hex::encode(mac.finalize().into_bytes())
+    }
+
+    #[test]
+    fn test_valid_webhook_signature_passes() {
+        let payload = r#"{"event":"payment.captured","payload":{"payment":{"entity":{"id":"pay_123","order_id":"order_456"}}}}"#;
+        let secret = "test_webhook_secret_key";
+        let signature = generate_test_signature(payload, secret);
+
+        let result = verify_webhook_signature(payload, &signature, secret);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tampered_payload_fails_signature() {
+        let payload = r#"{"event":"payment.captured","amount":500}"#;
+        let secret = "test_webhook_secret_key";
+        let signature = generate_test_signature(payload, secret);
+
+        let tampered_payload = r#"{"event":"payment.captured","amount":50000}"#;
+        let result = verify_webhook_signature(tampered_payload, &signature, secret);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_wrong_secret_fails_signature() {
+        let payload = r#"{"event":"payment.captured","amount":500}"#;
+        let secret = "test_webhook_secret_key";
+        let wrong_secret = "attacker_secret_key";
+        let signature = generate_test_signature(payload, wrong_secret);
+
+        let result = verify_webhook_signature(payload, &signature, secret);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_payment_captured_payload_structure() {
+        let payload_str = r#"{
+            "entity": "event",
+            "account_id": "acc_test",
+            "event": "payment.captured",
+            "contains": ["payment"],
+            "payload": {
+                "payment": {
+                    "entity": {
+                        "id": "pay_987654",
+                        "entity": "payment",
+                        "amount": 500,
+                        "currency": "USD",
+                        "status": "captured",
+                        "order_id": "order_123456"
+                    }
+                }
+            },
+            "created_at": 1786960000
+        }"#;
+
+        let json: JsonValue = serde_json::from_str(payload_str).expect("Valid JSON expected");
+        assert_eq!(
+            json.get("event").and_then(|v| v.as_str()),
+            Some("payment.captured")
+        );
+
+        let payment_entity = json
+            .get("payload")
+            .and_then(|p| p.get("payment"))
+            .and_then(|p| p.get("entity"))
+            .expect("payment entity expected");
+
+        assert_eq!(
+            payment_entity.get("id").and_then(|v| v.as_str()),
+            Some("pay_987654")
+        );
+        assert_eq!(
+            payment_entity.get("order_id").and_then(|v| v.as_str()),
+            Some("order_123456")
+        );
+        assert_eq!(
+            payment_entity.get("status").and_then(|v| v.as_str()),
+            Some("captured")
+        );
+    }
+
+    #[test]
+    fn test_parse_payment_failed_payload_structure() {
+        let payload_str = r#"{
+            "entity": "event",
+            "event": "payment.failed",
+            "payload": {
+                "payment": {
+                    "entity": {
+                        "id": "pay_failed_123",
+                        "order_id": "order_fail_999",
+                        "error_code": "BAD_REQUEST_ERROR",
+                        "error_description": "Card was declined"
+                    }
+                }
+            }
+        }"#;
+
+        let json: JsonValue = serde_json::from_str(payload_str).expect("Valid JSON expected");
+        assert_eq!(
+            json.get("event").and_then(|v| v.as_str()),
+            Some("payment.failed")
+        );
+
+        let payment_entity = json
+            .get("payload")
+            .and_then(|p| p.get("payment"))
+            .and_then(|p| p.get("entity"))
+            .expect("payment entity expected");
+
+        assert_eq!(
+            payment_entity.get("error_code").and_then(|v| v.as_str()),
+            Some("BAD_REQUEST_ERROR")
+        );
+        assert_eq!(
+            payment_entity
+                .get("error_description")
+                .and_then(|v| v.as_str()),
+            Some("Card was declined")
+        );
+    }
+}
