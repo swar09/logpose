@@ -20,6 +20,7 @@ pub struct Urls {
 #[diesel(table_name = crate::schema::urls)]
 pub struct NewUrl<'a> {
     pub long_url: &'a str,
+    pub short_code: Option<&'a str>,
     pub created_by: Option<Uuid>,
     pub guest_id: Option<Uuid>,
     pub expires_at: Option<DateTime<Utc>>,
@@ -29,6 +30,7 @@ pub struct NewUrl<'a> {
 pub struct NewUrlRequest {
     pub long_url: String,
     pub created_by: Uuid,
+    pub custom_alias: Option<String>,
 }
 
 #[derive(Deserialize)]

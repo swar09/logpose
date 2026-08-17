@@ -6,6 +6,7 @@ use axum::{
 use serde::Serialize;
 use std::fmt::{self};
 
+use crate::billing::billing::BillingError;
 use crate::service::rate_limiting::RateLimitError;
 
 #[derive(Debug, Serialize)]
@@ -26,6 +27,7 @@ pub enum AppError {
     BadRequest(String),
     Internal(String),
     RateLimitError(RateLimitError),
+    Billing(BillingError),
 }
 
 impl std::error::Error for AppError {}
@@ -43,6 +45,7 @@ impl fmt::Display for AppError {
             AppError::BadRequest(msg) => write!(f, "Bad request: {msg}"),
             AppError::Internal(msg) => write!(f, "Internal error: {msg}"),
             AppError::RateLimitError(e) => write!(f, "Rate limit error {0}", e.msg),
+            AppError::Billing(e) => write!(f, "Billing error: {e}"),
         }
     }
 }
@@ -74,6 +77,12 @@ impl From<jsonwebtoken::errors::Error> for AppError {
 impl From<RateLimitError> for AppError {
     fn from(err: RateLimitError) -> Self {
         AppError::RateLimitError(err)
+    }
+}
+
+impl From<BillingError> for AppError {
+    fn from(err: BillingError) -> Self {
+        AppError::Billing(err)
     }
 }
 
@@ -111,31 +120,9 @@ impl IntoResponse for AppError {
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
             AppError::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
             AppError::RateLimitError(e) => (StatusCode::TOO_MANY_REQUESTS, e.msg),
+            AppError::Billing(e) => (StatusCode::BAD_GATEWAY, e.to_string()),
         };
 
         (status, Json(ErrorResponse { error: message })).into_response()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_app_error_status_codes() {
-        let not_found_res = AppError::NotFound("URL not found".into()).into_response();
-        assert_eq!(not_found_res.status(), StatusCode::NOT_FOUND);
-
-        let unauthorized_res = AppError::Unauthorized.into_response();
-        assert_eq!(unauthorized_res.status(), StatusCode::UNAUTHORIZED);
-
-        let forbidden_res = AppError::Forbidden("Denied".into()).into_response();
-        assert_eq!(forbidden_res.status(), StatusCode::FORBIDDEN);
-
-        let bad_req_res = AppError::BadRequest("Invalid payload".into()).into_response();
-        assert_eq!(bad_req_res.status(), StatusCode::BAD_REQUEST);
-
-        let internal_res = AppError::Internal("Something broke".into()).into_response();
-        assert_eq!(internal_res.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

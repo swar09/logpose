@@ -1,14 +1,19 @@
 use std::sync::Arc;
 
 use aes::Aes256;
+use diesel::PgConnection;
+use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
-use diesel::{PgConnection, r2d2::ConnectionManager};
 use fpe::ff1::FF1;
 
 use crate::{
     error::AppError,
-    repository::url::get_long_url_by_id,
-    utils::{base62::decode, redis::RedisStore},
+    repository::url::{get_long_url_by_id, get_long_url_by_short_code},
+    utils::{
+        alias::{get_cache_ttl_for_code, is_custom_alias},
+        base62::decode,
+        redis::RedisStore,
+    },
 };
 
 #[derive(Clone)]
@@ -37,26 +42,26 @@ impl UrlService {
             }
         };
         if let Some(url) = cached_long_url {
-            // cache hit
             return Ok(url);
         }
+
         let mut pg_conn = self.pg_pool.get()?;
-        // cache miss -> Database call
-        let id = decode(&short_code, &self.ff)?;
-        let long_url = get_long_url_by_id(id as i32, &mut pg_conn)?;
+        let ttl_seconds = get_cache_ttl_for_code(&short_code);
+
+        let long_url = if is_custom_alias(&short_code) {
+            get_long_url_by_short_code(short_code.clone(), &mut pg_conn)?
+        } else {
+            let id = decode(&short_code, &self.ff)?;
+            get_long_url_by_id(id as i32, &mut pg_conn)?
+        };
+
         let cache_long_url = long_url.clone();
         let redis = self.redis.clone();
+        let sc = short_code.clone();
         tokio::spawn(async move {
-            let result = redis.set_url(120, cache_long_url, short_code).await;
-            match result {
-                Ok(i) => {
-                    tracing::info!("cached long url got {i}");
-                }
-                Err(e) => {
-                    tracing::error!("{e}");
-                }
-            }
+            let _ = redis.set_url(ttl_seconds, cache_long_url, sc).await;
         });
+
         Ok(long_url)
     }
 }

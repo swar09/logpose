@@ -1,4 +1,4 @@
-﻿// @generated automatically by Diesel CLI.
+// @generated automatically by Diesel CLI.
 
 pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
@@ -92,7 +92,7 @@ diesel::table! {
 diesel::table! {
     url_analytics (id) {
         id -> Uuid,
-        #[max_length = 4]
+        #[max_length = 50]
         short_code -> Nullable<Varchar>,
         clicked_at -> Timestamptz,
         #[max_length = 45]
@@ -113,7 +113,7 @@ diesel::table! {
 diesel::table! {
     urls (database_id) {
         database_id -> Int4,
-        #[max_length = 4]
+        #[max_length = 50]
         short_code -> Nullable<Varchar>,
         #[max_length = 2048]
         long_url -> Varchar,

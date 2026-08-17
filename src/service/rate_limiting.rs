@@ -10,16 +10,12 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tower::{Layer, Service};
-// use tower::Layer;
 
-// This is just a temp fix
 #[derive(Debug)]
 pub struct RateLimitError {
     pub msg: String,
 }
 
-// #[derive(Clone)]
-// Impl Clone manually
 pub struct RateLimiterService<S, A> {
     inner: S,
     algorithm: Arc<A>,
@@ -34,14 +30,10 @@ impl<S: Clone, A> Clone for RateLimiterService<S, A> {
     }
 }
 
-// i have to pass this in axum layer right !
-// it must be cheaply cloneable
-// thats wehy arc
-// #[derive(Clone)]
-// consider manual impl clone for
 pub struct RateLimiterLayer<A> {
     pub algorithm: Arc<A>,
 }
+
 impl<A> RateLimiterLayer<A> {
     pub fn new(algorithm: A) -> Self {
         RateLimiterLayer {
@@ -158,7 +150,6 @@ impl TokenBucket {
     }
 
     pub async fn acquire_one(&self) -> bool {
-        // worst case infinite loop
         loop {
             let mut guard = self.inner.lock().await;
 
@@ -178,7 +169,6 @@ impl TokenBucket {
     }
 
     pub async fn try_acquire_one(&self, _n: u64) -> bool {
-        // acquire or false
         let mut guard = self.inner.lock().await;
 
         guard.refill(self.refill_rate, self.bucket_size);
@@ -217,11 +207,9 @@ impl TokenBucketState {
     }
 }
 
-// pub struct LeakyBucket {}
-// pub struct FixedWindowCounter {}
-// pub struct SlidingWindowLog {}
-// pub struct SlidingWindowCounter {}
-mod test {
+#[cfg(test)]
+mod tests {
+    use super::*;
 
     #[tokio::test]
     async fn new_token_bucket_zero_size_rate() {
