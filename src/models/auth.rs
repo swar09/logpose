@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
-use axum::RequestPartsExt;
-use axum::extract::FromRequestParts;
-use axum::http::StatusCode;
-use axum::http::request::Parts;
+use axum::{
+    RequestPartsExt,
+    extract::FromRequestParts,
+    http::{StatusCode, request::Parts},
+};
 use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
@@ -46,10 +47,7 @@ pub struct AuthUser {
 impl FromRequestParts<Arc<AppState>> for AuthUser {
     type Rejection = StatusCode;
 
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &Arc<AppState>,
-    ) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, state: &Arc<AppState>) -> Result<Self, Self::Rejection> {
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await

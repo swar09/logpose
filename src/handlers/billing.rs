@@ -13,20 +13,17 @@ use uuid::Uuid;
 use crate::{
     AppState,
     billing::callback::{
-        CreateOrderPayload, CreateOrderResponse, UserSubscriptionResponse, VerifyPaymentPayload,
-        VerifyPaymentResponse,
+        CreateOrderPayload, CreateOrderResponse, UserSubscriptionResponse, VerifyPaymentPayload, VerifyPaymentResponse,
     },
     error::AppError,
     models::{
         auth::AuthUser,
-        billing::{
-            BillingInterval, NewPayment, NewUserSubscription, PaymentStatus, SubscriptionStatus,
-        },
+        billing::{BillingInterval, NewPayment, NewUserSubscription, PaymentStatus, SubscriptionStatus},
     },
     repository::billing::{
         cancel_user_subscription, create_payment, create_user_subscription, get_active_plans,
-        get_active_subscription_by_user_id, get_payment_by_order_id, get_plan_by_code,
-        get_plan_by_id, update_payment_failed, update_payment_success,
+        get_active_subscription_by_user_id, get_payment_by_order_id, get_plan_by_code, get_plan_by_id,
+        update_payment_failed, update_payment_success,
     },
 };
 
@@ -66,7 +63,7 @@ pub async fn create_checkout_order(
             } else {
                 return Err(AppError::from(e));
             }
-        }
+        },
     };
 
     let new_payment = NewPayment {
@@ -104,9 +101,7 @@ pub async fn verify_checkout_payment(
 
     let existing_payment = get_payment_by_order_id(&payload.razorpay_order_id, &mut conn)?;
     if existing_payment.user_id != auth_user.user_id {
-        return Err(AppError::Forbidden(
-            "Unauthorized payment verification".into(),
-        ));
+        return Err(AppError::Forbidden("Unauthorized payment verification".into()));
     }
 
     let is_valid = verify_payment_signature(
@@ -176,12 +171,11 @@ pub async fn get_current_subscription(
         Some(sub) => {
             let p = get_plan_by_id(sub.plan_id, &mut conn)?;
             (p, true)
-        }
+        },
         None => {
-            let p = get_plan_by_code("plan_free", &mut conn)
-                .or_else(|_| get_plan_by_id(1, &mut conn))?;
+            let p = get_plan_by_code("plan_free", &mut conn).or_else(|_| get_plan_by_id(1, &mut conn))?;
             (p, false)
-        }
+        },
     };
 
     let response = UserSubscriptionResponse {
@@ -201,17 +195,12 @@ pub async fn cancel_current_subscription(
     let active_sub = match get_active_subscription_by_user_id(auth_user.user_id, &mut conn)? {
         Some(sub) => sub,
         None => {
-            return Err(AppError::BadRequest(
-                "No active subscription found to cancel".into(),
-            ));
-        }
+            return Err(AppError::BadRequest("No active subscription found to cancel".into()));
+        },
     };
 
     if let Some(ref rzp_sub_id) = active_sub.razorpay_subscription_id {
-        let _ = state
-            .billing
-            .stop_subscription(rzp_sub_id, true, None)
-            .await;
+        let _ = state.billing.stop_subscription(rzp_sub_id, true, None).await;
     }
 
     cancel_user_subscription(active_sub.id, true, &mut conn)?;

@@ -1,12 +1,10 @@
-use diesel::ExpressionMethods;
-use diesel::PgConnection;
-use diesel::QueryDsl;
-use diesel::RunQueryDsl;
-use diesel::SelectableHelper;
+use diesel::{ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper};
 use uuid::Uuid;
 
-use crate::models::user::{NewUser, UpdateOAuthProfile, UpdatePassword, UpdateUser, Users};
-use crate::schema::users::{self, email, google_id, hashed_password, id};
+use crate::{
+    models::user::{NewUser, UpdateOAuthProfile, UpdatePassword, UpdateUser, Users},
+    schema::users::{self, email, google_id, hashed_password, id},
+};
 
 pub fn create(conn: &mut PgConnection, user: &NewUser) -> Result<Users, diesel::result::Error> {
     diesel::insert_into(users::table)
@@ -15,10 +13,7 @@ pub fn create(conn: &mut PgConnection, user: &NewUser) -> Result<Users, diesel::
         .get_result(conn)
 }
 
-pub fn delete_by_id(
-    conn: &mut PgConnection,
-    user_id: Uuid,
-) -> Result<usize, diesel::result::Error> {
+pub fn delete_by_id(conn: &mut PgConnection, user_id: Uuid) -> Result<usize, diesel::result::Error> {
     diesel::delete(users::table.find(user_id)).execute(conn)
 }
 
@@ -50,20 +45,14 @@ pub fn get_by_id(user_id: Uuid, conn: &mut PgConnection) -> Result<Users, diesel
         .first(conn)
 }
 
-pub fn get_by_email(
-    user_email: &str,
-    conn: &mut PgConnection,
-) -> Result<Users, diesel::result::Error> {
+pub fn get_by_email(user_email: &str, conn: &mut PgConnection) -> Result<Users, diesel::result::Error> {
     users::table
         .filter(email.eq(user_email))
         .select(Users::as_select())
         .first(conn)
 }
 
-pub fn get_by_google_id(
-    google_id_val: &str,
-    conn: &mut PgConnection,
-) -> Result<Users, diesel::result::Error> {
+pub fn get_by_google_id(google_id_val: &str, conn: &mut PgConnection) -> Result<Users, diesel::result::Error> {
     users::table
         .filter(google_id.eq(Some(google_id_val)))
         .select(Users::as_select())
@@ -81,12 +70,6 @@ pub fn update_oauth_profile(
         .get_result(conn)
 }
 
-pub fn get_hashed_password_by_id(
-    user_id: Uuid,
-    conn: &mut PgConnection,
-) -> Result<String, diesel::result::Error> {
-    users::table
-        .filter(id.eq(user_id))
-        .select(hashed_password)
-        .first(conn)
+pub fn get_hashed_password_by_id(user_id: Uuid, conn: &mut PgConnection) -> Result<String, diesel::result::Error> {
+    users::table.filter(id.eq(user_id)).select(hashed_password).first(conn)
 }

@@ -9,8 +9,8 @@ use crate::{
     AppState,
     handlers::{
         url::{
-            create_public_url, create_url, delete_url, generate_generic_qr, get_my_guest_urls,
-            get_short_code_qr, get_url_data_by_shortcode, redirect_url_by_short_code, update_url,
+            create_public_url, create_url, delete_url, generate_generic_qr, get_my_guest_urls, get_short_code_qr,
+            get_url_data_by_shortcode, redirect_url_by_short_code, update_url,
         },
         url_analytics::get_analytics_by_short_code,
     },

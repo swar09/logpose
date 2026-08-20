@@ -2,8 +2,10 @@ use chrono::Utc;
 use diesel::prelude::*;
 use uuid::Uuid;
 
-use crate::models::billing::{NewWebhookEvent, WebhookEvent, WebhookProcessingStatus};
-use crate::schema::webhook_events;
+use crate::{
+    models::billing::{NewWebhookEvent, WebhookEvent, WebhookProcessingStatus},
+    schema::webhook_events,
+};
 
 pub fn record_webhook_event(
     new_event: NewWebhookEvent,

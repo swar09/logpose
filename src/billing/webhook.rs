@@ -12,43 +12,31 @@ use serde_json::Value as JsonValue;
 
 use crate::{
     AppState,
-    models::billing::{
-        BillingInterval, NewUserSubscription, NewWebhookEvent, WebhookProcessingStatus,
-    },
+    models::billing::{BillingInterval, NewUserSubscription, NewWebhookEvent, WebhookProcessingStatus},
     repository::{
         billing::{
-            create_user_subscription, get_payment_by_order_id, get_plan_by_id,
-            update_payment_failed, update_payment_success,
+            create_user_subscription, get_payment_by_order_id, get_plan_by_id, update_payment_failed,
+            update_payment_success,
         },
         webhook::{mark_webhook_processed, record_webhook_event},
     },
 };
 
-pub async fn razorpay_webhook(
-    State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Response {
-    let rzp_event_id = match headers
-        .get("x-razorpay-event-id")
-        .and_then(|v| v.to_str().ok())
-    {
+pub async fn razorpay_webhook(State(state): State<Arc<AppState>>, headers: HeaderMap, body: Bytes) -> Response {
+    let rzp_event_id = match headers.get("x-razorpay-event-id").and_then(|v| v.to_str().ok()) {
         Some(id) => id.to_string(),
         None => {
             tracing::warn!("webhook request missing x-razorpay-event-id");
             return StatusCode::BAD_REQUEST.into_response();
-        }
+        },
     };
 
-    let signature = match headers
-        .get("X-Razorpay-Signature")
-        .and_then(|v| v.to_str().ok())
-    {
+    let signature = match headers.get("X-Razorpay-Signature").and_then(|v| v.to_str().ok()) {
         Some(sig) => sig.to_string(),
         None => {
             tracing::warn!("webhook request missing X-Razorpay-Signature header");
             return StatusCode::BAD_REQUEST.into_response();
-        }
+        },
     };
 
     let payload_str = match std::str::from_utf8(&body) {
@@ -56,7 +44,7 @@ pub async fn razorpay_webhook(
         Err(_) => {
             tracing::warn!("webhook request body parsing failed");
             return StatusCode::BAD_REQUEST.into_response();
-        }
+        },
     };
 
     if verify_webhook_signature(&payload_str, &signature, &state.webhook_secret).is_err() {
@@ -69,7 +57,7 @@ pub async fn razorpay_webhook(
         Err(_) => {
             tracing::warn!("Invalid JSON payload in webhook");
             return StatusCode::BAD_REQUEST.into_response();
-        }
+        },
     };
 
     let state_clone = state.clone();
@@ -90,10 +78,7 @@ async fn process_webhook_event(
     payload: JsonValue,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut conn = state.pool.get()?;
-    let event_type = payload
-        .get("event")
-        .and_then(|v| v.as_str())
-        .unwrap_or("unknown");
+    let event_type = payload.get("event").and_then(|v| v.as_str()).unwrap_or("unknown");
 
     let new_event = NewWebhookEvent {
         event_id: &event_id,
@@ -115,14 +100,8 @@ async fn process_webhook_event(
                 .and_then(|p| p.get("entity"));
 
             if let Some(payment_entity) = payment_obj {
-                let order_id = payment_entity
-                    .get("order_id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
-                let payment_id = payment_entity
-                    .get("id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let order_id = payment_entity.get("order_id").and_then(|v| v.as_str()).unwrap_or("");
+                let payment_id = payment_entity.get("id").and_then(|v| v.as_str()).unwrap_or("");
 
                 if !order_id.is_empty()
                     && !payment_id.is_empty()
@@ -133,16 +112,10 @@ async fn process_webhook_event(
                     if let Ok(plan) = get_plan_by_id(payment.plan_id, &mut conn) {
                         let start_now = Utc::now();
                         let end_time = match plan.interval {
-                            BillingInterval::Monthly => {
-                                Some(start_now + chrono::Duration::days(30))
-                            }
-                            BillingInterval::Yearly => {
-                                Some(start_now + chrono::Duration::days(365))
-                            }
+                            BillingInterval::Monthly => Some(start_now + chrono::Duration::days(30)),
+                            BillingInterval::Yearly => Some(start_now + chrono::Duration::days(365)),
                             BillingInterval::Lifetime => None,
-                            BillingInterval::OneTime => {
-                                Some(start_now + chrono::Duration::days(30))
-                            }
+                            BillingInterval::OneTime => Some(start_now + chrono::Duration::days(30)),
                         };
 
                         let new_sub = NewUserSubscription {
@@ -159,7 +132,7 @@ async fn process_webhook_event(
                     }
                 }
             }
-        }
+        },
         "payment.failed" => {
             let payment_obj = payload
                 .get("payload")
@@ -167,50 +140,41 @@ async fn process_webhook_event(
                 .and_then(|p| p.get("entity"));
 
             if let Some(payment_entity) = payment_obj {
-                let order_id = payment_entity
-                    .get("order_id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let order_id = payment_entity.get("order_id").and_then(|v| v.as_str()).unwrap_or("");
                 let error_code = payment_entity.get("error_code").and_then(|v| v.as_str());
-                let error_desc = payment_entity
-                    .get("error_description")
-                    .and_then(|v| v.as_str());
+                let error_desc = payment_entity.get("error_description").and_then(|v| v.as_str());
 
                 if !order_id.is_empty() {
                     let _ = update_payment_failed(order_id, error_code, error_desc, &mut conn);
                 }
             }
-        }
-        _ => {}
+        },
+        _ => {},
     }
 
-    let _ = mark_webhook_processed(
-        &event_id,
-        WebhookProcessingStatus::Processed,
-        None,
-        &mut conn,
-    );
+    let _ = mark_webhook_processed(&event_id, WebhookProcessingStatus::Processed, None, &mut conn);
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use hmac::{Hmac, KeyInit, Mac};
     use sha2::Sha256;
+
+    use super::*;
 
     type HmacSha256 = Hmac<Sha256>;
 
     fn generate_test_signature(body: &str, secret: &str) -> String {
-        let mut mac =
-            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
+        let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
         mac.update(body.as_bytes());
         hex::encode(mac.finalize().into_bytes())
     }
 
     #[test]
     fn test_valid_webhook_signature_passes() {
-        let payload = r#"{"event":"payment.captured","payload":{"payment":{"entity":{"id":"pay_123","order_id":"order_456"}}}}"#;
+        let payload =
+            r#"{"event":"payment.captured","payload":{"payment":{"entity":{"id":"pay_123","order_id":"order_456"}}}}"#;
         let secret = "test_webhook_secret_key";
         let signature = generate_test_signature(payload, secret);
 
@@ -263,10 +227,7 @@ mod tests {
         }"#;
 
         let json: JsonValue = serde_json::from_str(payload_str).expect("Valid JSON expected");
-        assert_eq!(
-            json.get("event").and_then(|v| v.as_str()),
-            Some("payment.captured")
-        );
+        assert_eq!(json.get("event").and_then(|v| v.as_str()), Some("payment.captured"));
 
         let payment_entity = json
             .get("payload")
@@ -274,18 +235,12 @@ mod tests {
             .and_then(|p| p.get("entity"))
             .expect("payment entity expected");
 
-        assert_eq!(
-            payment_entity.get("id").and_then(|v| v.as_str()),
-            Some("pay_987654")
-        );
+        assert_eq!(payment_entity.get("id").and_then(|v| v.as_str()), Some("pay_987654"));
         assert_eq!(
             payment_entity.get("order_id").and_then(|v| v.as_str()),
             Some("order_123456")
         );
-        assert_eq!(
-            payment_entity.get("status").and_then(|v| v.as_str()),
-            Some("captured")
-        );
+        assert_eq!(payment_entity.get("status").and_then(|v| v.as_str()), Some("captured"));
     }
 
     #[test]
@@ -306,10 +261,7 @@ mod tests {
         }"#;
 
         let json: JsonValue = serde_json::from_str(payload_str).expect("Valid JSON expected");
-        assert_eq!(
-            json.get("event").and_then(|v| v.as_str()),
-            Some("payment.failed")
-        );
+        assert_eq!(json.get("event").and_then(|v| v.as_str()), Some("payment.failed"));
 
         let payment_entity = json
             .get("payload")
@@ -322,9 +274,7 @@ mod tests {
             Some("BAD_REQUEST_ERROR")
         );
         assert_eq!(
-            payment_entity
-                .get("error_description")
-                .and_then(|v| v.as_str()),
+            payment_entity.get("error_description").and_then(|v| v.as_str()),
             Some("Card was declined")
         );
     }

@@ -2,11 +2,12 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
-use crate::models::billing::{
-    NewPayment, NewUserSubscription, Payment, PaymentStatus, Plan, SubscriptionStatus,
-    UserSubscription,
+use crate::{
+    models::billing::{
+        NewPayment, NewUserSubscription, Payment, PaymentStatus, Plan, SubscriptionStatus, UserSubscription,
+    },
+    schema::{payments, plans, user_subscriptions},
 };
-use crate::schema::{payments, plans, user_subscriptions};
 
 pub fn get_active_plans(conn: &mut PgConnection) -> Result<Vec<Plan>, diesel::result::Error> {
     plans::table
@@ -16,50 +17,32 @@ pub fn get_active_plans(conn: &mut PgConnection) -> Result<Vec<Plan>, diesel::re
         .load(conn)
 }
 
-pub fn get_plan_by_id(
-    plan_id: i32,
-    conn: &mut PgConnection,
-) -> Result<Plan, diesel::result::Error> {
-    plans::table
-        .find(plan_id)
-        .select(Plan::as_select())
-        .first(conn)
+pub fn get_plan_by_id(plan_id: i32, conn: &mut PgConnection) -> Result<Plan, diesel::result::Error> {
+    plans::table.find(plan_id).select(Plan::as_select()).first(conn)
 }
 
-pub fn get_plan_by_code(
-    code_str: &str,
-    conn: &mut PgConnection,
-) -> Result<Plan, diesel::result::Error> {
+pub fn get_plan_by_code(code_str: &str, conn: &mut PgConnection) -> Result<Plan, diesel::result::Error> {
     plans::table
         .filter(plans::code.eq(code_str))
         .select(Plan::as_select())
         .first(conn)
 }
 
-pub fn create_payment(
-    new_payment: NewPayment,
-    conn: &mut PgConnection,
-) -> Result<Payment, diesel::result::Error> {
+pub fn create_payment(new_payment: NewPayment, conn: &mut PgConnection) -> Result<Payment, diesel::result::Error> {
     diesel::insert_into(payments::table)
         .values(&new_payment)
         .returning(Payment::as_returning())
         .get_result(conn)
 }
 
-pub fn get_payment_by_order_id(
-    order_id_str: &str,
-    conn: &mut PgConnection,
-) -> Result<Payment, diesel::result::Error> {
+pub fn get_payment_by_order_id(order_id_str: &str, conn: &mut PgConnection) -> Result<Payment, diesel::result::Error> {
     payments::table
         .filter(payments::razorpay_order_id.eq(order_id_str))
         .select(Payment::as_select())
         .first(conn)
 }
 
-pub fn get_payment_by_id(
-    payment_id: Uuid,
-    conn: &mut PgConnection,
-) -> Result<Payment, diesel::result::Error> {
+pub fn get_payment_by_id(payment_id: Uuid, conn: &mut PgConnection) -> Result<Payment, diesel::result::Error> {
     payments::table
         .find(payment_id)
         .select(Payment::as_select())

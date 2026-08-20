@@ -1,19 +1,16 @@
-use argon2::password_hash::PasswordVerifier;
-use argon2::{Argon2, PasswordHash, PasswordHasher, password_hash::SaltString};
+use argon2::{
+    Argon2, PasswordHash, PasswordHasher,
+    password_hash::{PasswordVerifier, SaltString},
+};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use rand_core::OsRng;
 use uuid::Uuid;
-
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 
 use crate::models::auth::{Claims, UserRole};
 
 const DURATION: u64 = 3600;
 
-pub fn generate_jwt(
-    role: UserRole,
-    user_id: Uuid,
-    key: EncodingKey,
-) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_jwt(role: UserRole, user_id: Uuid, key: EncodingKey) -> Result<String, jsonwebtoken::errors::Error> {
     let now = chrono::Utc::now().timestamp() as u64;
     let jti = Uuid::new_v4();
     let claims = Claims {
@@ -70,17 +67,15 @@ mod tests {
 
     #[test]
     fn test_jwt_generation_and_verification() {
-        let _ = jsonwebtoken::crypto::CryptoProvider::install_default(
-            &jsonwebtoken::crypto::rust_crypto::DEFAULT_PROVIDER,
-        );
+        let _ =
+            jsonwebtoken::crypto::CryptoProvider::install_default(&jsonwebtoken::crypto::rust_crypto::DEFAULT_PROVIDER);
 
         let secret = "test_jwt_secret_key_1234567890!@#$";
         let encoding_key = EncodingKey::from_secret(secret.as_bytes());
         let decoding_key = DecodingKey::from_secret(secret.as_bytes());
 
         let user_id = Uuid::new_v4();
-        let token =
-            generate_jwt(UserRole::Client, user_id, encoding_key).expect("Failed to generate JWT");
+        let token = generate_jwt(UserRole::Client, user_id, encoding_key).expect("Failed to generate JWT");
 
         let token_data = verify_jwt(token, decoding_key).expect("Failed to verify JWT");
         assert_eq!(token_data.claims.sub, user_id);
@@ -89,9 +84,8 @@ mod tests {
 
     #[test]
     fn test_jwt_verification_fails_with_invalid_secret() {
-        let _ = jsonwebtoken::crypto::CryptoProvider::install_default(
-            &jsonwebtoken::crypto::rust_crypto::DEFAULT_PROVIDER,
-        );
+        let _ =
+            jsonwebtoken::crypto::CryptoProvider::install_default(&jsonwebtoken::crypto::rust_crypto::DEFAULT_PROVIDER);
 
         let secret = "correct_secret_key_1234567890";
         let invalid_secret = "wrong_secret_key_1234567890!!";

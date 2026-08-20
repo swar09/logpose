@@ -6,19 +6,9 @@ use woothee::parser::Parser;
 
 use crate::{models::url_analytics::NewEntry, repository::url_analytics::create};
 
-pub fn create_analytics(
-    addr: SocketAddr,
-    header: &HeaderMap,
-    conn: &mut PgConnection,
-    short_code: String,
-) -> bool {
-    let get_header = |name: &str| -> String {
-        header
-            .get(name)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("")
-            .to_string()
-    };
+pub fn create_analytics(addr: SocketAddr, header: &HeaderMap, conn: &mut PgConnection, short_code: String) -> bool {
+    let get_header =
+        |name: &str| -> String { header.get(name).and_then(|v| v.to_str().ok()).unwrap_or("").to_string() };
     let ip_address = get_header("X-Forwarded-For")
         .split(',')
         .next_back()
@@ -51,6 +41,6 @@ pub fn create_analytics(
         Err(e) => {
             eprintln!("{e}");
             false
-        }
+        },
     }
 }

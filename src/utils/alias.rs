@@ -42,8 +42,7 @@ pub fn validate_custom_alias(alias: &str) -> Result<String, AppError> {
         .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
     {
         return Err(AppError::BadRequest(
-            "Custom alias can only contain alphanumeric characters, hyphens, and underscores"
-                .into(),
+            "Custom alias can only contain alphanumeric characters, hyphens, and underscores".into(),
         ));
     }
 
@@ -152,10 +151,7 @@ mod tests {
 
         for keyword in reserved {
             let result = validate_custom_alias(keyword);
-            assert!(
-                result.is_err(),
-                "Expected reserved keyword error: {keyword}"
-            );
+            assert!(result.is_err(), "Expected reserved keyword error: {keyword}");
         }
     }
 

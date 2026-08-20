@@ -15,16 +15,12 @@ use crate::{
     models::{
         auth::AuthUser,
         user::{
-            NewUser, NewUserRequest, UpdatePassword, UpdatePasswordRequest, UpdateRequest,
-            UpdateUser, UserResponse,
+            NewUser, NewUserRequest, UpdatePassword, UpdatePasswordRequest, UpdateRequest, UpdateUser, UserResponse,
         },
     },
     repository::{
         billing::{get_active_subscription_by_user_id, get_plan_by_code, get_plan_by_id},
-        user::{
-            create, delete_by_id, get_by_id, get_hashed_password_by_id, update_by_id,
-            update_password_by_id,
-        },
+        user::{create, delete_by_id, get_by_id, get_hashed_password_by_id, update_by_id, update_password_by_id},
     },
     utils::auth::{hash_password, verify_password},
 };
@@ -45,8 +41,8 @@ pub async fn signup(
     headers: HeaderMap,
     Json(payload): Json<NewUserRequest>,
 ) -> Result<Response, AppError> {
-    let hashed_password = hash_password(payload.password)
-        .map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
+    let hashed_password =
+        hash_password(payload.password).map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
 
     let new_user = NewUser {
         email: &payload.email,
@@ -148,8 +144,8 @@ pub async fn update_user_password(
         return Err(AppError::BadRequest("Old password does not match".into()));
     }
 
-    let hashed_password = hash_password(payload.new_password)
-        .map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
+    let hashed_password =
+        hash_password(payload.new_password).map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
 
     let update_password = UpdatePassword {
         hashed_password: &hashed_password,
@@ -174,12 +170,11 @@ pub async fn get_subscription_by_id(
         Some(sub) => {
             let p = get_plan_by_id(sub.plan_id, &mut conn)?;
             (p, true)
-        }
+        },
         None => {
-            let p = get_plan_by_code("plan_free", &mut conn)
-                .or_else(|_| get_plan_by_id(1, &mut conn))?;
+            let p = get_plan_by_code("plan_free", &mut conn).or_else(|_| get_plan_by_id(1, &mut conn))?;
             (p, false)
-        }
+        },
     };
 
     let response = UserSubscriptionResponse {

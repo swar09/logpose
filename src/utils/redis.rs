@@ -1,8 +1,9 @@
+use std::time::Duration;
+
 use redis::{
     AsyncCommands, Client, RedisError, SetOptions,
     aio::{ConnectionManager, ConnectionManagerConfig},
 };
-use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -41,12 +42,7 @@ impl RedisStore {
         Ok(result)
     }
 
-    pub async fn set_url(
-        &self,
-        exp: u64,
-        long_url: String,
-        short_code: String,
-    ) -> Result<bool, RedisError> {
+    pub async fn set_url(&self, exp: u64, long_url: String, short_code: String) -> Result<bool, RedisError> {
         let mut conn = self.conn_mng.clone();
 
         let options = SetOptions::default().with_expiration(redis::SetExpiry::EX(exp));

@@ -3,8 +3,8 @@ use axum::http::HeaderMap;
 use razorpay::{
     Creatable, Fetchable, RazorpayClient,
     models::{
-        CapturePaymentRequest, CreateOrderRequest, CreatePlanRequest, CreateSubscriptionRequest,
-        Order, Payment, Plan, Subscription,
+        CapturePaymentRequest, CreateOrderRequest, CreatePlanRequest, CreateSubscriptionRequest, Order, Payment, Plan,
+        Subscription,
     },
 };
 
@@ -18,17 +18,9 @@ pub enum BillingError {
 
 #[async_trait]
 pub trait PaymentsGateway: Send + Sync {
-    async fn get_payment(
-        &self,
-        payment_id: &str,
-        extra_headers: Option<HeaderMap>,
-    ) -> Result<Payment, BillingError>;
+    async fn get_payment(&self, payment_id: &str, extra_headers: Option<HeaderMap>) -> Result<Payment, BillingError>;
 
-    async fn get_order(
-        &self,
-        order_id: &str,
-        extra_headers: Option<HeaderMap>,
-    ) -> Result<Order, BillingError>;
+    async fn get_order(&self, order_id: &str, extra_headers: Option<HeaderMap>) -> Result<Order, BillingError>;
 
     async fn create_order(
         &self,
@@ -36,11 +28,8 @@ pub trait PaymentsGateway: Send + Sync {
         extra_headers: Option<HeaderMap>,
     ) -> Result<Order, BillingError>;
 
-    async fn verify_payment(
-        &self,
-        payment_id: &str,
-        extra_headers: Option<HeaderMap>,
-    ) -> Result<Payment, BillingError>;
+    async fn verify_payment(&self, payment_id: &str, extra_headers: Option<HeaderMap>)
+    -> Result<Payment, BillingError>;
 
     async fn capture_payment(
         &self,
@@ -85,22 +74,14 @@ pub trait PaymentsGateway: Send + Sync {
 
 #[async_trait]
 impl PaymentsGateway for RazorpayClient {
-    async fn get_payment(
-        &self,
-        payment_id: &str,
-        extra_headers: Option<HeaderMap>,
-    ) -> Result<Payment, BillingError> {
+    async fn get_payment(&self, payment_id: &str, extra_headers: Option<HeaderMap>) -> Result<Payment, BillingError> {
         self.payments()
             .fetch(payment_id, extra_headers)
             .await
             .map_err(BillingError::from)
     }
 
-    async fn get_order(
-        &self,
-        order_id: &str,
-        extra_headers: Option<HeaderMap>,
-    ) -> Result<Order, BillingError> {
+    async fn get_order(&self, order_id: &str, extra_headers: Option<HeaderMap>) -> Result<Order, BillingError> {
         self.orders()
             .fetch(order_id, extra_headers)
             .await

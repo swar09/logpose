@@ -8,8 +8,8 @@ use axum::{
 use crate::{
     AppState,
     handlers::user::{
-        delete_user_by_id, get_subscription_by_id, get_urls, get_user_by_id, signup,
-        update_user_info_by_id, update_user_password,
+        delete_user_by_id, get_subscription_by_id, get_urls, get_user_by_id, signup, update_user_info_by_id,
+        update_user_password,
     },
 };
 

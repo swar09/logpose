@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use aes::Aes256;
-use diesel::PgConnection;
-use diesel::r2d2::ConnectionManager;
-use diesel::r2d2::Pool;
+use diesel::{
+    PgConnection,
+    r2d2::{ConnectionManager, Pool},
+};
 use fpe::ff1::FF1;
 
 use crate::{
@@ -24,11 +25,7 @@ pub struct UrlService {
 }
 
 impl UrlService {
-    pub fn new(
-        redis: RedisStore,
-        pg_pool: Pool<ConnectionManager<PgConnection>>,
-        ff: Arc<FF1<Aes256>>,
-    ) -> Self {
+    pub fn new(redis: RedisStore, pg_pool: Pool<ConnectionManager<PgConnection>>, ff: Arc<FF1<Aes256>>) -> Self {
         UrlService { redis, pg_pool, ff }
     }
 
@@ -39,7 +36,7 @@ impl UrlService {
             Err(e) => {
                 tracing::warn!("Redis lookup failed, falling back to database: {e}");
                 None
-            }
+            },
         };
         if let Some(url) = cached_long_url {
             return Ok(url);

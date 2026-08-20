@@ -1,13 +1,13 @@
+use std::fmt::{self};
+
 use axum::{
     Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
-use std::fmt::{self};
 
-use crate::billing::billing::BillingError;
-use crate::service::rate_limiting::RateLimitError;
+use crate::{billing::billing::BillingError, service::rate_limiting::RateLimitError};
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
@@ -91,32 +91,26 @@ impl IntoResponse for AppError {
         let (status, message) = match self {
             AppError::Database(diesel::result::Error::NotFound) => {
                 (StatusCode::NOT_FOUND, "Resource not found".to_string())
-            }
+            },
             AppError::Database(e) => {
                 tracing::error!("Database error: {e}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Database error".to_string(),
-                )
-            }
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string())
+            },
             AppError::Pool(e) => {
                 tracing::error!("Connection pool error: {e}");
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Service temporarily unavailable".to_string(),
                 )
-            }
+            },
             AppError::Redis(e) => {
                 tracing::error!("Redis error: {e}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "Cache error".to_string())
-            }
+            },
             AppError::Jwt(e) => {
                 tracing::error!("JWT error: {e}");
-                (
-                    StatusCode::UNAUTHORIZED,
-                    "Invalid authentication token".to_string(),
-                )
-            }
+                (StatusCode::UNAUTHORIZED, "Invalid authentication token".to_string())
+            },
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized access".to_string()),
             AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg),

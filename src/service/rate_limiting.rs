@@ -1,14 +1,18 @@
-use axum::body::Body;
-use axum::http::{Request, Response, StatusCode};
-use axum::response::IntoResponse;
-use std::cmp::min;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
-use std::task::{Context, Poll};
-use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
-use tokio::time::sleep;
+use std::{
+    cmp::min,
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+    time::{Duration, Instant},
+};
+
+use axum::{
+    body::Body,
+    http::{Request, Response, StatusCode},
+    response::IntoResponse,
+};
+use tokio::{sync::Mutex, time::sleep};
 use tower::{Layer, Service};
 
 #[derive(Debug)]

@@ -14,17 +14,13 @@ use crate::{
     error::AppError,
     models::{
         auth::AuthUser,
-        url::{
-            NewUrl, NewUrlRequest, PublicNewUrlRequest, UpdateCode, UpdateUrl, UpdateUrlRequest,
-            Urls,
-        },
+        url::{NewUrl, NewUrlRequest, PublicNewUrlRequest, UpdateCode, UpdateUrl, UpdateUrlRequest, Urls},
     },
     repository::{
         billing::{get_active_subscription_by_user_id, get_plan_by_code, get_plan_by_id},
         url::{
-            check_short_code_exists, count_urls_by_user_id, create, delete_by_short_code,
-            get_active_urls_by_guest_id, get_by_short_code, get_long_url_by_id, modify_code_by_id,
-            modify_url_by_id,
+            check_short_code_exists, count_urls_by_user_id, create, delete_by_short_code, get_active_urls_by_guest_id,
+            get_by_short_code, get_long_url_by_id, modify_code_by_id, modify_url_by_id,
         },
     },
     utils::{alias::validate_custom_alias, base62::encode},
@@ -47,9 +43,7 @@ pub async fn create_url(
     Json(payload): Json<NewUrlRequest>,
 ) -> Result<Response, AppError> {
     if auth_user.user_id != payload.created_by {
-        return Err(AppError::Forbidden(
-            "Cannot create URL for another user".into(),
-        ));
+        return Err(AppError::Forbidden("Cannot create URL for another user".into()));
     }
     if payload.long_url.len() > 2048 {
         return Err(AppError::BadRequest(
@@ -61,9 +55,7 @@ pub async fn create_url(
 
     let plan = match get_active_subscription_by_user_id(auth_user.user_id, &mut conn)? {
         Some(sub) => get_plan_by_id(sub.plan_id, &mut conn)?,
-        None => {
-            get_plan_by_code("plan_free", &mut conn).or_else(|_| get_plan_by_id(1, &mut conn))?
-        }
+        None => get_plan_by_code("plan_free", &mut conn).or_else(|_| get_plan_by_id(1, &mut conn))?,
     };
 
     let user_url_count = count_urls_by_user_id(auth_user.user_id, &mut conn)?;
@@ -155,29 +147,21 @@ pub async fn create_public_url(
 
     let mut response = (StatusCode::CREATED, Json(url)).into_response();
     if should_set_cookie {
-        let cookie_val = format!(
-            "guest_id={}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax",
-            guest_id
-        );
+        let cookie_val = format!("guest_id={}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax", guest_id);
         if let Ok(header_val) = axum::http::HeaderValue::from_str(&cookie_val) {
-            response
-                .headers_mut()
-                .insert(header::SET_COOKIE, header_val);
+            response.headers_mut().insert(header::SET_COOKIE, header_val);
         }
     }
 
     Ok(response)
 }
 
-pub async fn get_my_guest_urls(
-    State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
-) -> Result<Response, AppError> {
+pub async fn get_my_guest_urls(State(state): State<Arc<AppState>>, headers: HeaderMap) -> Result<Response, AppError> {
     let guest_id = match extract_guest_id(&headers) {
         Some(id) => id,
         None => {
             return Ok((StatusCode::OK, Json(Vec::<Urls>::new())).into_response());
-        }
+        },
     };
 
     let mut conn = state.pool.get()?;
@@ -211,7 +195,7 @@ pub async fn redirect_url_by_short_code(
                 format!("{}/404", frontend_url.trim_end_matches('/'))
             };
             return Redirect::temporary(&not_found_url);
-        }
+        },
     };
 
     let pool = state.pool.clone();
@@ -240,9 +224,7 @@ pub async fn update_url(
 
     let existing_url = get_by_short_code(short_code.clone(), &mut conn)?;
     if existing_url.created_by != Some(auth_user.user_id) {
-        return Err(AppError::Forbidden(
-            "You are not allowed to update this URL".into(),
-        ));
+        return Err(AppError::Forbidden("You are not allowed to update this URL".into()));
     }
 
     let update_url = UpdateUrl {
@@ -267,9 +249,7 @@ pub async fn delete_url(
 
     let existing_url = get_by_short_code(short_code.clone(), &mut conn)?;
     if existing_url.created_by != Some(auth_user.user_id) {
-        return Err(AppError::Forbidden(
-            "You are not allowed to delete this URL".into(),
-        ));
+        return Err(AppError::Forbidden("You are not allowed to delete this URL".into()));
     }
 
     delete_by_short_code(short_code.clone(), &mut conn)?;
@@ -319,8 +299,7 @@ pub async fn get_short_code_qr(
     let dark = params.fg.as_deref().unwrap_or("#000000");
     let light = params.bg.as_deref().unwrap_or("#ffffff");
 
-    let svg_str = crate::utils::qr::generate_qr_svg(&target, Some(dark), Some(light))
-        .map_err(AppError::Internal)?;
+    let svg_str = crate::utils::qr::generate_qr_svg(&target, Some(dark), Some(light)).map_err(AppError::Internal)?;
 
     if params.format.as_deref() == Some("json") {
         #[derive(serde::Serialize)]
@@ -358,8 +337,7 @@ pub async fn generate_generic_qr(
     let dark = params.fg.as_deref().unwrap_or("#000000");
     let light = params.bg.as_deref().unwrap_or("#ffffff");
 
-    let svg_str = crate::utils::qr::generate_qr_svg(&target, Some(dark), Some(light))
-        .map_err(AppError::Internal)?;
+    let svg_str = crate::utils::qr::generate_qr_svg(&target, Some(dark), Some(light)).map_err(AppError::Internal)?;
 
     if params.format.as_deref() == Some("json") {
         #[derive(serde::Serialize)]

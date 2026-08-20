@@ -1,0 +1,6 @@
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+max_width = 120
+hard_tabs = false
+tab_spaces = 4
+match_block_trailing_comma = true

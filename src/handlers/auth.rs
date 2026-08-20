@@ -6,22 +6,26 @@ use axum::{
     http::{HeaderMap, StatusCode, header},
     response::{IntoResponse, Redirect, Response},
 };
-use diesel::query_dsl::methods::{FilterDsl, OrFilterDsl, SelectDsl};
-use diesel::{ExpressionMethods, RunQueryDsl};
+use diesel::{
+    ExpressionMethods, RunQueryDsl,
+    query_dsl::methods::{FilterDsl, OrFilterDsl, SelectDsl},
+};
 use jsonwebtoken::EncodingKey;
 use oauth2::{AuthorizationCode, CsrfToken, Scope, TokenResponse};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::AppState;
-use crate::error::AppError;
-use crate::models::auth::{AuthUser, LoginData, LoginRequest, LoginResponse, UserRole};
-use crate::models::user::{NewUser, UpdateOAuthProfile};
-use crate::repository::user::{
-    create, get_by_email, get_by_google_id, get_hashed_password_by_id, update_oauth_profile,
+use crate::{
+    AppState,
+    error::AppError,
+    models::{
+        auth::{AuthUser, LoginData, LoginRequest, LoginResponse, UserRole},
+        user::{NewUser, UpdateOAuthProfile},
+    },
+    repository::user::{create, get_by_email, get_by_google_id, get_hashed_password_by_id, update_oauth_profile},
+    schema::users::{self, email, username},
+    utils::auth::{generate_jwt, verify_password},
 };
-use crate::schema::users::{self, email, username};
-use crate::utils::auth::{generate_jwt, verify_password};
 
 const DURATION: usize = 3600;
 
@@ -112,10 +116,7 @@ pub async fn google_login(State(state): State<Arc<AppState>>) -> Result<Redirect
         .add_extra_param("prompt", "select_account")
         .url();
 
-    state
-        .redis_store
-        .set_oauth_state(csrf_token.secret(), 300)
-        .await?;
+    state.redis_store.set_oauth_state(csrf_token.secret(), 300).await?;
 
     Ok(Redirect::temporary(auth_url.as_str()))
 }
@@ -136,14 +137,9 @@ pub async fn google_callback(
         .code
         .ok_or_else(|| AppError::BadRequest("Missing OAuth authorization code".into()))?;
 
-    let is_valid_state = state
-        .redis_store
-        .verify_and_consume_oauth_state(&state_param)
-        .await?;
+    let is_valid_state = state.redis_store.verify_and_consume_oauth_state(&state_param).await?;
     if !is_valid_state {
-        return Err(AppError::BadRequest(
-            "Invalid or expired OAuth state parameter".into(),
-        ));
+        return Err(AppError::BadRequest("Invalid or expired OAuth state parameter".into()));
     }
 
     let token_res = state
@@ -174,14 +170,8 @@ pub async fn google_callback(
 
     let user = match existing_user {
         Some(existing) => {
-            let first = user_info
-                .given_name
-                .as_deref()
-                .unwrap_or(&existing.first_name);
-            let last = user_info
-                .family_name
-                .as_deref()
-                .unwrap_or(&existing.last_name);
+            let first = user_info.given_name.as_deref().unwrap_or(&existing.first_name);
+            let last = user_info.family_name.as_deref().unwrap_or(&existing.last_name);
             let update_profile = UpdateOAuthProfile {
                 first_name: first,
                 last_name: last,
@@ -189,7 +179,7 @@ pub async fn google_callback(
                 google_id: Some(&user_info.sub),
             };
             update_oauth_profile(existing.id, &update_profile, &mut conn)?
-        }
+        },
         None => {
             let first = user_info.given_name.as_deref().unwrap_or("User");
             let last = user_info.family_name.as_deref().unwrap_or("");
@@ -207,7 +197,7 @@ pub async fn google_callback(
                 auth_provider: "google",
             };
             create(&mut conn, &new_user)?
-        }
+        },
     };
 
     if let Some(cookie_header) = headers.get(header::COOKIE)
@@ -237,8 +227,7 @@ pub async fn google_callback(
         expires_in: chrono::Utc::now().timestamp() as usize + DURATION,
     };
 
-    let frontend_url =
-        std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
+    let frontend_url = std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
     let redirect_url = format!(
         "{}/auth/callback?token={}",
         frontend_url.trim_end_matches('/'),
@@ -248,18 +237,11 @@ pub async fn google_callback(
     Ok(Redirect::temporary(&redirect_url).into_response())
 }
 
-pub async fn logout(
-    State(state): State<Arc<AppState>>,
-    auth_user: AuthUser,
-) -> Result<Response, AppError> {
+pub async fn logout(State(state): State<Arc<AppState>>, auth_user: AuthUser) -> Result<Response, AppError> {
     let now = chrono::Utc::now().timestamp() as u64;
     let exp_rsec = auth_user.exp.saturating_sub(now);
 
-    state
-        .redis_store
-        .clone()
-        .blacklist(auth_user.jti, exp_rsec)
-        .await?;
+    state.redis_store.clone().blacklist(auth_user.jti, exp_rsec).await?;
 
     Ok(StatusCode::OK.into_response())
 }
