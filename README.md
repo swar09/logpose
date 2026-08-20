@@ -12,9 +12,9 @@ When a user opens `/{short_code}`, they are temporarily redirected. The redirect
 
 The database is indexed by the serial ID, the short code for rapid lookups, and by email in the users table. Using Diesel ORM allows writing type-safe queries in Diesel's DSL rather than raw SQL, while Diesel takes care of query generation, execution, and error handling.
 
-For networking and security, Nginx is configured as a reverse proxy load balancer using round-robin distribution across multiple app instances. Nginx also forwards client headers (`X-Real-IP`, `X-Forwarded-For`), which are required by the downstream Token Bucket rate limiter so it inspects real client IP addresses instead of the proxy's IP. Authentication and security are handled using JWT and Argon2id for password hashing.
+For networking and security, Nginx is configured as a reverse proxy load balancer using round-robin distribution across multiple app instances. Nginx also forwards client headers (`X-Real-IP`, `X-Forwarded-For`), which are required by the downstream Token Bucket rate limiter so it inspects real client IP addresses instead of the proxy's IP. Authentication and security are handled using JWT and Argon2id for password hashing, along with Google OAuth 2.0 login. In addition to automatic short code generation, the service supports 6–30 character custom aliases, instant QR code generation, guest shortening with cookie persistence and automatic registration claiming, as well as a tiered subscription model (Free, Pro, Enterprise) integrated with Razorpay for checkout orders, subscription management, and webhook reconciliation.
 
-Moving forward, I am planning features like database sharding, a minimal no-login shortening API, a subscription model, custom shortcodes, and payment integration (currently working on Razorpay). I am also planning OAuth integration via Google and magic link login/signup methods.
+Moving forward, I am planning features like database sharding and magic link login/signup methods.
 
 ```mermaid
 flowchart TB
@@ -44,9 +44,10 @@ flowchart TB
     end
 
     subgraph RouteLayer["Routing Layer (src/routes)"]
-        R_Auth["/api/v1/auth (Signup, Login)"]
+        R_Auth["/api/v1/auth (Signup, Login, OAuth)"]
         R_User["/api/v1/users (Profile)"]
-        R_Url["/api/v1/urls (Shorten, Manage)"]
+        R_Url["/api/v1/urls (Shorten, Custom, QR, Manage)"]
+        R_Bill["/api/v1/billing (Checkout, Webhooks)"]
         R_Redir["/:short_code (Fast Redirect)"]
         R_Health["/api/health (Health Check)"]
     end
@@ -55,6 +56,7 @@ flowchart TB
         H_Auth["AuthHandler"]
         H_User["UserHandler"]
         H_Url["UrlHandler"]
+        H_Bill["BillingHandler"]
         H_Analytics["UrlAnalyticsHandler"]
     end
 
@@ -68,19 +70,22 @@ flowchart TB
         Base62["Base62 Encoder / Decoder"]
         Argon2["Argon2 Password Hasher"]
         JWTUtil["JWT Token Manager"]
+        QRGen["QR Code Generator"]
         UAEngine["Analytics Parser (IP, Device, Browser)"]
     end
 
     subgraph RepoLayer["Repository Layer (src/repository)"]
         Repo_User["UserRepository"]
         Repo_Url["UrlRepository"]
+        Repo_Bill["Billing & Webhook Repository"]
         Repo_Analytics["UrlAnalyticsRepository"]
         Pool["Diesel r2d2 Pool"]
     end
 
-    %% External Billing Service
+    %% External Services
     subgraph ExternalServices["External Services"]
-        Razorpay["Razorpay / Stripe Billing API"]
+        GoogleAuth["Google OAuth 2.0 API"]
+        Razorpay["Razorpay Billing & Webhooks API"]
     end
 
     %% Data & Storage Tier
@@ -92,7 +97,8 @@ flowchart TB
         T_Users[("users table")]
         T_Urls[("urls table")]
         T_Analytics[("url_analytics table")]
-        T_Trans[("transactions table")]
+        T_Plans[("plans & subscriptions tables")]
+        T_Trans[("payments & webhook_events tables")]
     end
 
     %% Connections - Client to Edge
@@ -118,6 +124,7 @@ flowchart TB
     R_Auth --> H_Auth
     R_User --> H_User
     R_Url --> H_Url
+    R_Bill --> H_Bill
     R_Redir --> S_Url
     R_Health --> HandlerLayer
 
@@ -125,11 +132,14 @@ flowchart TB
     H_Auth --> Argon2
     H_Auth --> JWTUtil
     H_Auth --> Repo_User
+    H_Auth -.-> GoogleAuth
     H_User --> Repo_User
     H_Url --> S_Url
     H_Url --> UAEngine
+    H_Url --> QRGen
+    H_Bill --> Repo_Bill
+    H_Bill -.-> Razorpay
     H_Analytics --> Repo_Analytics
-    H_Auth -.-> Razorpay
 
     %% Service to Crypto and Repositories
     S_Url --> FPE
@@ -140,12 +150,14 @@ flowchart TB
     S_Url -->|1. Cache Hit / Miss| Redis
     Repo_User --> Pool
     Repo_Url --> Pool
+    Repo_Bill --> Pool
     Repo_Analytics --> Pool
 
     %% Pool to DB Tables
     Pool --> T_Users
     Pool --> T_Urls
     Pool --> T_Analytics
+    Pool --> T_Plans
     Pool --> T_Trans
 ```
 
@@ -173,6 +185,7 @@ docker compose up -d
 
 * [axum](https://crates.io/crates/axum) - Ergonomic and modular web application framework for Rust.
 * [tokio](https://crates.io/crates/tokio) - Asynchronous runtime for the Rust programming language.
+* [razorpay-rs](https://crates.io/crates/razorpay-rs) - Client SDK for integrating Razorpay payment and subscription APIs.
 * [diesel](https://crates.io/crates/diesel) - Safe, extensible ORM and Query Builder for Rust.
 * [redis](https://crates.io/crates/redis) - Redis client library for Rust with async and connection manager support.
 * [fpe](https://crates.io/crates/fpe) - Format-Preserving Encryption (FF1 mode) implementation.
@@ -184,4 +197,5 @@ docker compose up -d
 * [tower-http](https://crates.io/crates/tower-http) / [tower](https://crates.io/crates/tower) - Modular HTTP middleware (CORS, rate limiting, service abstractions).
 * [tracing](https://crates.io/crates/tracing) & [tracing-subscriber](https://crates.io/crates/tracing-subscriber) - Structured logging and diagnostics framework.
 * [reqwest](https://crates.io/crates/reqwest) - Ergonomic HTTP client for third-party service calls and payment APIs.
+* [oauth2](https://crates.io/crates/oauth2) - Strongly-typed Rust OAuth2 client library for Google authentication.
 * [qrcode](https://crates.io/crates/qrcode) - QR code encoder for generating quick-access QR codes.
