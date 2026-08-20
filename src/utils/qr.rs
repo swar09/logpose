@@ -1,5 +1,5 @@
-use qrcode::{EcLevel, QrCode};
 use qrcode::render::svg;
+use qrcode::{EcLevel, QrCode};
 
 pub fn generate_qr_svg(
     content: &str,

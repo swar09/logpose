@@ -361,7 +361,6 @@ pub async fn generate_generic_qr(
     let svg_str = crate::utils::qr::generate_qr_svg(&target, Some(dark), Some(light))
         .map_err(AppError::Internal)?;
 
-
     if params.format.as_deref() == Some("json") {
         #[derive(serde::Serialize)]
         struct QrJsonResponse {
@@ -385,4 +384,3 @@ pub async fn generate_generic_qr(
     );
     Ok(res)
 }
-

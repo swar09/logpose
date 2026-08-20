@@ -237,8 +237,8 @@ pub async fn google_callback(
         expires_in: chrono::Utc::now().timestamp() as usize + DURATION,
     };
 
-    let frontend_url = std::env::var("FRONTEND_URL")
-        .unwrap_or_else(|_| "http://localhost:5173".to_string());
+    let frontend_url =
+        std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
     let redirect_url = format!(
         "{}/auth/callback?token={}",
         frontend_url.trim_end_matches('/'),

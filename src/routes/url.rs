@@ -36,7 +36,6 @@ pub fn v1_routes_public() -> Router<Arc<AppState>> {
         .route("/qr", get(generate_generic_qr))
 }
 
-
 pub fn redirect_url_routes() -> Router<Arc<AppState>> {
     Router::new().route("/{short_code}", get(redirect_url_by_short_code))
 }
