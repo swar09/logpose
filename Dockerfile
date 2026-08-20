@@ -1,74 +1,56 @@
 # syntax=docker/dockerfile:1
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
-ARG RUST_VERSION=1.97.1
 ARG APP_NAME=logpose
 
-################################################################################
-# Create a stage for building the application.
-
-FROM rust:${RUST_VERSION}-alpine AS build
+FROM amazonlinux:2023 AS build
 ARG APP_NAME
 WORKDIR /app
 
-# Install host build dependencies.
-RUN apk add --no-cache clang lld musl-dev git make perl gcc g++ postgresql-dev
+RUN dnf update -y && \
+    dnf install -y --allowerasing \
+    gcc \
+    gcc-c++ \
+    make \
+    clang \
+    git \
+    openssl-devel \
+    libpq-devel \
+    pkgconfig \
+    perl \
+    tar \
+    gzip \
+    curl && \
+    dnf clean all
 
-# Build the application.
-# Leverage a cache mount to /usr/local/cargo/registry/
-# for downloaded dependencies, a cache mount to /usr/local/cargo/git/db
-# for git repository dependencies, and a cache mount to /app/target/ for
-# compiled dependencies which will speed up subsequent builds.
-# Leverage a bind mount to the src directory to avoid having to copy the
-# source code into the container. Once built, copy the executable to an
-# output directory before the cache mounted /app/target is unmounted.
-RUN --mount=type=bind,source=src,target=src \
-    --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
-    --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
-    --mount=type=cache,target=/app/target/ \
-    --mount=type=cache,target=/usr/local/cargo/git/db \
-    --mount=type=cache,target=/usr/local/cargo/registry/ \
-cargo build --locked --release && \
-cp ./target/release/$APP_NAME /bin/server
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
 
-################################################################################
-# Create a new stage for running the application that contains the minimal
-# runtime dependencies for the application. This often uses a different base
-# image from the build stage where the necessary files are copied from the build
-# stage.
-#
-# The example below uses the alpine image as the foundation for running the app.
-# By specifying the "3.18" tag, it will use version 3.18 of alpine. If
-# reproducibility is important, consider using a digest
-# (e.g., alpine@sha256:664888ac9cfd28068e062c991ebcff4b4c7307dc8dd4df9e728bedde5c449d91).
-FROM alpine:3.20 AS final
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
 
-# Install production-level runtime dependencies
-RUN apk add --no-cache ca-certificates libpq libgcc
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
+RUN cargo build --locked --release && \
+    cp ./target/release/$APP_NAME /bin/server
+
+FROM amazonlinux:2023 AS final
+
+# Install runtime libraries
+RUN dnf update -y && \
+    dnf install -y --allowerasing \
+    openssl \
+    libpq \
+    ca-certificates \
+    shadow-utils && \
+    dnf clean all
+
 ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    appuser
+RUN useradd -u ${UID} -m -s /sbin/nologin appuser
 USER appuser
 
-# Copy the executable from the "build" stage.
-COPY --from=build /bin/server /bin/
+COPY --from=build /bin/server /bin/server
 
-# Expose the port that the application listens on.
 EXPOSE 8000
 
-# What the container should run when it is started.
 CMD ["/bin/server"]

@@ -204,7 +204,13 @@ pub async fn redirect_url_by_short_code(
         Ok(url) => url,
         Err(e) => {
             tracing::error!("{e}");
-            return Redirect::temporary("/404");
+            let frontend_url = std::env::var("FRONTEND_URL").unwrap_or_default();
+            let not_found_url = if frontend_url.is_empty() {
+                "/404".to_string()
+            } else {
+                format!("{}/404", frontend_url.trim_end_matches('/'))
+            };
+            return Redirect::temporary(&not_found_url);
         }
     };
 
@@ -274,3 +280,109 @@ pub async fn delete_url(
 
     Ok(StatusCode::OK.into_response())
 }
+
+#[derive(serde::Deserialize, Debug)]
+pub struct QrQueryParams {
+    pub url: Option<String>,
+    pub fg: Option<String>,
+    pub bg: Option<String>,
+    pub format: Option<String>,
+}
+
+pub async fn get_short_code_qr(
+    State(state): State<Arc<AppState>>,
+    Path(short_code): Path<String>,
+    axum::extract::Query(params): axum::extract::Query<QrQueryParams>,
+    headers: HeaderMap,
+) -> Result<Response, AppError> {
+    let mut conn = state.pool.get()?;
+    let _url = get_by_short_code(short_code.clone(), &mut conn)?;
+
+    let host = headers
+        .get(header::HOST)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("localhost:8000");
+    let scheme = if headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v == "https")
+        .unwrap_or(false)
+    {
+        "https"
+    } else {
+        "http"
+    };
+
+    let target = params
+        .url
+        .unwrap_or_else(|| format!("{}://{}/{}", scheme, host, short_code));
+    let dark = params.fg.as_deref().unwrap_or("#000000");
+    let light = params.bg.as_deref().unwrap_or("#ffffff");
+
+    let svg_str = crate::utils::qr::generate_qr_svg(&target, Some(dark), Some(light))
+        .map_err(AppError::Internal)?;
+
+    if params.format.as_deref() == Some("json") {
+        #[derive(serde::Serialize)]
+        struct QrJsonResponse {
+            svg: String,
+            short_code: String,
+            target_url: String,
+        }
+        return Ok((
+            StatusCode::OK,
+            Json(QrJsonResponse {
+                svg: svg_str,
+                short_code,
+                target_url: target,
+            }),
+        )
+            .into_response());
+    }
+
+    let mut res = (StatusCode::OK, svg_str).into_response();
+    res.headers_mut().insert(
+        header::CONTENT_TYPE,
+        axum::http::HeaderValue::from_static("image/svg+xml"),
+    );
+    Ok(res)
+}
+
+pub async fn generate_generic_qr(
+    axum::extract::Query(params): axum::extract::Query<QrQueryParams>,
+) -> Result<Response, AppError> {
+    let target = params
+        .url
+        .ok_or_else(|| AppError::BadRequest("Query parameter 'url' is required".into()))?;
+
+    let dark = params.fg.as_deref().unwrap_or("#000000");
+    let light = params.bg.as_deref().unwrap_or("#ffffff");
+
+    let svg_str = crate::utils::qr::generate_qr_svg(&target, Some(dark), Some(light))
+        .map_err(AppError::Internal)?;
+
+
+    if params.format.as_deref() == Some("json") {
+        #[derive(serde::Serialize)]
+        struct QrJsonResponse {
+            svg: String,
+            target_url: String,
+        }
+        return Ok((
+            StatusCode::OK,
+            Json(QrJsonResponse {
+                svg: svg_str,
+                target_url: target,
+            }),
+        )
+            .into_response());
+    }
+
+    let mut res = (StatusCode::OK, svg_str).into_response();
+    res.headers_mut().insert(
+        header::CONTENT_TYPE,
+        axum::http::HeaderValue::from_static("image/svg+xml"),
+    );
+    Ok(res)
+}
+

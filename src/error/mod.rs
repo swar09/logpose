@@ -89,6 +89,9 @@ impl From<BillingError> for AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
+            AppError::Database(diesel::result::Error::NotFound) => {
+                (StatusCode::NOT_FOUND, "Resource not found".to_string())
+            }
             AppError::Database(e) => {
                 tracing::error!("Database error: {e}");
                 (
