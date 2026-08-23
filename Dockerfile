@@ -2,6 +2,7 @@
 
 ARG APP_NAME=logpose
 
+# Build stage
 FROM amazonlinux:2023 AS build
 ARG APP_NAME
 WORKDIR /app
@@ -28,20 +29,29 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
 
+# Pre-cache dependencies
 COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && \
+    echo "fn main() {}" > src/main.rs && \
+    cargo build --locked --release && \
+    rm -rf src
+
+# Copy source code and build production release binary
 COPY src ./src
+RUN touch src/main.rs && \
+    cargo build --locked --release && \
+    cp ./target/release/$APP_NAME /bin/server && \
+    strip /bin/server
 
-RUN cargo build --locked --release && \
-    cp ./target/release/$APP_NAME /bin/server
-
+# Final lightweight production runtime stage
 FROM amazonlinux:2023 AS final
 
-# Install runtime libraries
 RUN dnf update -y && \
     dnf install -y --allowerasing \
     openssl \
     libpq \
     ca-certificates \
+    curl \
     shadow-utils && \
     dnf clean all
 
@@ -51,6 +61,12 @@ USER appuser
 
 COPY --from=build /bin/server /bin/server
 
+ENV SERVER_URL=0.0.0.0:8000 \
+    RUST_LOG=info
+
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
 CMD ["/bin/server"]
