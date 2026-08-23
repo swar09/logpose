@@ -61,7 +61,8 @@ pub fn get_connection_pool() -> Pool<ConnectionManager<PgConnection>> {
     let manager = ConnectionManager::<PgConnection>::new(url);
 
     Pool::builder()
-        .test_on_check_out(true)
+        .test_on_check_out(false)
+        .max_size(30)
         .build(manager)
         .expect("Could not build connection pool")
 }
@@ -156,6 +157,19 @@ async fn main() {
             }
         }
     });
+
+    let analytics_pool = pool.clone();
+    let analytics_redis = redis_store.clone();
+    tokio::spawn(async move {
+        crate::utils::analytics::run_analytics_worker(
+            analytics_redis,
+            analytics_pool,
+            crate::utils::analytics::DEFAULT_ANALYTICS_BATCH_SIZE,
+            crate::utils::analytics::DEFAULT_ANALYTICS_FLUSH_INTERVAL,
+        )
+        .await;
+    });
+    println!("      \x1b[32m\x1b[1mStarted\x1b[0m Analytics batch worker");
 
     let state = Arc::new(AppState {
         pool,

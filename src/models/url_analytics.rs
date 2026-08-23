@@ -1,7 +1,17 @@
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RawAnalyticsEvent {
+    pub short_code: String,
+    pub ip_address: String,
+    pub user_agent: Option<String>,
+    pub referer: Option<String>,
+    pub country_code: Option<String>,
+    pub clicked_at: DateTime<Utc>,
+}
 
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::url_analytics)]
@@ -14,7 +24,8 @@ pub struct NewEntry {
 
     pub short_code: Option<String>,
 
-    // pub clicked_at: DateTime<Utc>,
+    pub clicked_at: DateTime<Utc>,
+
     pub ip_address: String,
 
     pub user_agent: Option<String>,

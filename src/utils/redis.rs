@@ -91,4 +91,24 @@ impl RedisStore {
             Ok(false)
         }
     }
+
+    pub async fn push_analytics(
+        &self,
+        event: &crate::models::url_analytics::RawAnalyticsEvent,
+    ) -> Result<(), RedisError> {
+        let mut conn = self.conn_mng.clone();
+        let payload = serde_json::to_string(event)
+            .map_err(|e| RedisError::from(std::io::Error::other(e.to_string())))?;
+        conn.rpush("queue:analytics", payload).await
+    }
+
+    pub async fn pop_analytics_batch(&self, batch_size: usize) -> Result<Vec<String>, RedisError> {
+        let mut conn = self.conn_mng.clone();
+        let items: Option<Vec<String>> = redis::cmd("LPOP")
+            .arg("queue:analytics")
+            .arg(batch_size)
+            .query_async(&mut conn)
+            .await?;
+        Ok(items.unwrap_or_default())
+    }
 }

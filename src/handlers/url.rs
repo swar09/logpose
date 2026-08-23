@@ -87,6 +87,14 @@ pub async fn create_url(
         };
 
         let url = create(new_url, &mut conn)?;
+
+        if let Some(ref sc) = url.short_code {
+            let ttl = crate::utils::alias::get_cache_ttl_for_code(sc);
+            if let Err(e) = state.redis_store.set_url(ttl, url.long_url.clone(), sc.clone()).await {
+                tracing::warn!("Failed to write-through cache URL in Redis: {e}");
+            }
+        }
+
         return Ok((StatusCode::CREATED, Json(url)).into_response());
     }
 
@@ -106,6 +114,13 @@ pub async fn create_url(
 
     modify_code_by_id(url.database_id, updated_code, &mut conn)?;
     url.short_code = Some(short_code_str);
+
+    if let Some(ref sc) = url.short_code {
+        let ttl = crate::utils::alias::get_cache_ttl_for_code(sc);
+        if let Err(e) = state.redis_store.set_url(ttl, url.long_url.clone(), sc.clone()).await {
+            tracing::warn!("Failed to write-through cache URL in Redis: {e}");
+        }
+    }
 
     Ok((StatusCode::CREATED, Json(url)).into_response())
 }
@@ -144,6 +159,13 @@ pub async fn create_public_url(
 
     modify_code_by_id(url.database_id, updated_code, &mut conn)?;
     url.short_code = Some(short_code_str);
+
+    if let Some(ref sc) = url.short_code {
+        let ttl = crate::utils::alias::get_cache_ttl_for_code(sc);
+        if let Err(e) = state.redis_store.set_url(ttl, url.long_url.clone(), sc.clone()).await {
+            tracing::warn!("Failed to write-through cache public URL in Redis: {e}");
+        }
+    }
 
     let mut response = (StatusCode::CREATED, Json(url)).into_response();
     if should_set_cookie {
@@ -198,11 +220,11 @@ pub async fn redirect_url_by_short_code(
         },
     };
 
-    let pool = state.pool.clone();
-    let sc = short_code.clone();
-    tokio::task::spawn_blocking(move || {
-        if let Ok(mut conn) = pool.get() {
-            crate::utils::analytics::create_analytics(addr, &headers, &mut conn, sc);
+    let raw_event = crate::utils::analytics::extract_raw_analytics(addr, &headers, short_code);
+    let redis_store = state.redis_store.clone();
+    tokio::spawn(async move {
+        if let Err(e) = redis_store.push_analytics(&raw_event).await {
+            tracing::error!("Failed to push analytics event to Redis: {e}");
         }
     });
 

@@ -8,11 +8,16 @@ use crate::{
     },
 };
 
+#[allow(dead_code)]
 pub fn create(new_entry: NewEntry, conn: &mut PgConnection) -> Result<UrlAnalytics, diesel::result::Error> {
     diesel::insert_into(url_analytics::table)
         .values(&new_entry)
         .returning(UrlAnalytics::as_returning())
         .get_result(conn)
+}
+
+pub fn create_batch(entries: &[NewEntry], conn: &mut PgConnection) -> Result<usize, diesel::result::Error> {
+    diesel::insert_into(url_analytics::table).values(entries).execute(conn)
 }
 
 #[allow(dead_code)]
