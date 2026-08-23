@@ -97,8 +97,8 @@ impl RedisStore {
         event: &crate::models::url_analytics::RawAnalyticsEvent,
     ) -> Result<(), RedisError> {
         let mut conn = self.conn_mng.clone();
-        let payload = serde_json::to_string(event)
-            .map_err(|e| RedisError::from(std::io::Error::other(e.to_string())))?;
+        let payload =
+            serde_json::to_string(event).map_err(|e| RedisError::from(std::io::Error::other(e.to_string())))?;
         conn.rpush("queue:analytics", payload).await
     }
 

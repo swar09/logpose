@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Queryable, Selectable, Serialize, Clone, Debug)]
+#[derive(Queryable, Selectable, Serialize, Clone)]
 #[diesel(table_name = crate::schema::users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Users {
@@ -17,6 +17,7 @@ pub struct Users {
 
     pub email: String,
 
+    #[serde(skip_serializing)]
     pub hashed_password: String,
 
     pub avatar_url: Option<String>,
@@ -28,6 +29,24 @@ pub struct Users {
     pub created_at: DateTime<Utc>,
 
     pub updated_at: DateTime<Utc>,
+}
+
+impl std::fmt::Debug for Users {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Users")
+            .field("id", &self.id)
+            .field("first_name", &self.first_name)
+            .field("last_name", &self.last_name)
+            .field("username", &self.username)
+            .field("email", &self.email)
+            .field("hashed_password", &"[REDACTED]")
+            .field("avatar_url", &self.avatar_url)
+            .field("google_id", &self.google_id)
+            .field("auth_provider", &self.auth_provider)
+            .field("created_at", &self.created_at)
+            .field("updated_at", &self.updated_at)
+            .finish()
+    }
 }
 
 #[derive(Insertable)]
