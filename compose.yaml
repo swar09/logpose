@@ -1,8 +1,9 @@
 services:
   frontend:
+    image: ghcr.io/swar09/logpose-frontend:latest
     build:
       context: ../logpose-front-end
-      dockerfile: ../url-shortner/Dockerfile.frontend
+      dockerfile: Dockerfile
     container_name: logpose-frontend
     restart: unless-stopped
     ports:
@@ -15,6 +16,7 @@ services:
       - backend
 
   backend:
+    image: ghcr.io/swar09/logpose-backend:latest
     build:
       context: .
       dockerfile: Dockerfile
