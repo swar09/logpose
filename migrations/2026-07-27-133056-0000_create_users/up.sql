@@ -22,7 +22,7 @@ UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TABLE urls (
   database_id SERIAL PRIMARY KEY,
-  short_code VARCHAR(4) UNIQUE,
+  short_code VARCHAR(30) UNIQUE,
   long_url VARCHAR(2048) NOT NULL,
   created_by UUID,
   guest_id UUID,
@@ -39,7 +39,7 @@ UPDATE ON urls FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TABLE url_analytics(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  short_code VARCHAR(4),
+  short_code VARCHAR(30),
   clicked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   ip_address VARCHAR(45) NOT NULL,
   user_agent VARCHAR(1024),
